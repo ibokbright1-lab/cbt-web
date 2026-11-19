@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Scholars CBT | WAEC, NECO &amp; JAMB Examination Portal</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+
+  <!-- Top Navigation Header -->
+  <header class="navbar">
+    <div class="container nav-content">
+      <div class="nav-top-row">
+        <div class="brand">
+          <span class="brand-badge">CBT</span>
+          <div class="brand-text">
+            <h1>Scholars Standard Examination Portal</h1>
+            <p>JSS 1 – SSS 3 WAEC, NECO &amp; JAMB Smart CBT System</p>
+          </div>
+        </div>
+
+        <!-- Styled Candidate Identity + Aligned Sign Out Button -->
+        <div id="nav-profile-badge" class="nav-profile-badge hidden">
+          <div class="profile-identity">
+            <span id="nav-profile-avatar" class="profile-avatar" aria-hidden="true">SC</span>
+            <span id="nav-profile-text" class="profile-name-label"></span>
+          </div>
+          <button type="button" class="btn-signout" onclick="logoutStudentProfile()">Sign Out</button>
+        </div>
+      </div>
+
+      <nav class="nav-switcher" id="top-nav-controls" aria-label="Portal Navigation">
+        <button type="button" id="btn-student-view" class="nav-btn active" onclick="switchPortalView('student')">
+          Exam Lobby
+        </button>
+        <button type="button" id="btn-dashboard-view" class="nav-btn" onclick="switchPortalView('dashboard')">
+          Progress &amp; Leaderboard
+        </button>
+        <button type="button" id="btn-admin-view" class="nav-btn nav-btn-admin hidden" onclick="openAdminGate()">
+          Examiner Admin 🔒
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Resume Unfinished Exam Banner -->
+  <div class="container" style="padding-top: 16px;">
+    <div id="resume-session-banner" class="resume-banner hidden">
+      <div>
+        <strong>Saved Exam Session Found:</strong>
+        <span id="resume-session-summary"></span>
+      </div>
+      <div style="display:flex; gap:8px; flex-wrap:wrap;">
+        <button type="button" class="btn-primary" onclick="resumeSavedSession()">Resume Exam</button>
+        <button type="button" class="btn-danger-sm" onclick="discardSavedSession()">Discard</button>
+      </div>
+    </div>
+  </div>
+
+  <main class="container main-wrapper">
+
+    <!-- =========================================================
+         VIEW 1: CANDIDATE LOBBY, QUESTIONS PER SUBJECT & DURATION
+         ========================================================= -->
+    <section id="view-lobby" class="card view-section active">
+      <div class="card-header">
+        <span class="pill-tag">WAEC • JAMB • NECO Past Questions • Smart Reshuffle</span>
+        <h2>Candidate Registration, Question Count &amp; Duration Setup</h2>
+        <p>Sign in with your school, class, full name, and 4-digit PIN, then choose your question count (up to 120), duration, and subjects.</p>
+      </div>
+
+      <!-- Manual Profile Sign-In / Registration Gate -->
+      <div id="student-auth-box" class="auth-gate-box">
+        <div class="auth-gate-header">
+          <div>
+            <h3>Student Profile Verification (School + Name + 4-Digit PIN)</h3>
+            <p class="muted-small">Sign in with your exact registered name and 4-digit PIN to unlock your class leaderboard and personal ledger.</p>
+          </div>
+          <div class="auth-mode-tabs">
+            <button type="button" id="tab-auth-login" class="btn-primary" onclick="setAuthMode('login')">Sign In</button>
+            <button type="button" id="tab-auth-register" class="btn-outline" onclick="setAuthMode('register')">New Student</button>
+          </div>
+        </div>
+
+        <form id="student-auth-form" class="form-grid-auto" onsubmit="handleStudentAuth(event)">
+          <div class="form-group">
+            <label for="auth-school">School Name</label>
+            <input type="text" id="auth-school" placeholder="e.g., Peculiar Generation Schools" required />
+          </div>
+          <div class="form-group">
+            <label for="auth-class">Class Level</label>
+            <select id="auth-class" required>
+              <option value="JSS 1">JSS 1</option>
+              <option value="JSS 2">JSS 2</option>
+              <option value="JSS 3" selected>JSS 3 (Junior WAEC / BECE)</option>
+              <option value="SSS 1">SSS 1</option>
+              <option value="SSS 2">SSS 2</option>
+              <option value="SSS 3">SSS 3 (WAEC / NECO / JAMB)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="auth-fullname">Full Name</label>
+            <input type="text" id="auth-fullname" placeholder="e.g., Okon Bassey Eyo" required />
+          </div>
+          <div class="form-group">
+            <label for="auth-pin">4-Digit PIN</label>
+            <input type="password" id="auth-pin" maxlength="4" pattern="\d{4}" inputmode="numeric" placeholder="e.g., 1234" required />
+          </div>
+          <div class="form-group" style="display:flex; align-items:flex-end;">
+            <button type="submit" id="auth-submit-btn" class="btn-primary btn-block">Verify &amp; Sign In</button>
+          </div>
+        </form>
+        <p id="auth-feedback" class="muted-small" style="margin-top:8px; font-weight:600;"></p>
+      </div>
+
+      <form id="candidate-lobby-form" onsubmit="startOfficialExam(event)">
+        <div class="form-grid-auto">
+          <div class="form-group">
+            <label for="candidate-name">Candidate Full Name</label>
+            <input type="text" id="candidate-name" placeholder="e.g., Okon Bassey Eyo" required />
+          </div>
+
+          <div class="form-group">
+            <label for="candidate-reg-no">Registration ID (Optional)</label>
+            <input type="text" id="candidate-reg-no" placeholder="e.g., SCH/2026/014" />
+          </div>
+
+          <div class="form-group">
+            <label for="candidate-class">Class Level</label>
+            <select id="candidate-class" onchange="renderCandidateSubjects()" required>
+              <option value="JSS 1">JSS 1</option>
+              <option value="JSS 2">JSS 2</option>
+              <option value="JSS 3" selected>JSS 3 (Junior WAEC / BECE)</option>
+              <option value="SSS 1">SSS 1</option>
+              <option value="SSS 2">SSS 2</option>
+              <option value="SSS 3">SSS 3 (WAEC / NECO / JAMB)</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="questions-per-subject-select">Questions Per Subject</label>
+            <select id="questions-per-subject-select" onchange="handleQuestionsPerSubjectChange()" required>
+              <option value="15" selected>15 Questions / Subject (30-Min Sprint)</option>
+              <option value="20">20 Questions / Subject</option>
+              <option value="30">30 Questions / Subject</option>
+              <option value="45">45 Questions / Subject</option>
+              <option value="60">60 Questions / Subject (Standard JAMB)</option>
+              <option value="100">100 Questions / Subject</option>
+              <option value="120">120 Questions / Subject (Full Bank)</option>
+              <option value="CUSTOM">Custom Count (5–120)</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="exam-duration-select">Examination Time</label>
+            <select id="exam-duration-select" onchange="toggleCustomDurationInput()" required>
+              <option value="30" selected>30 Minutes</option>
+              <option value="45">45 Minutes</option>
+              <option value="60">60 Minutes (1 Hour)</option>
+              <option value="90">90 Minutes (1 Hour 30 Mins)</option>
+              <option value="120">120 Minutes (2 Hours — Full JAMB)</option>
+              <option value="CUSTOM">Custom Duration (Minutes)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-grid" style="margin-top: 14px;">
+          <div id="custom-qcount-row" class="form-group hidden">
+            <label for="custom-qcount-input">Custom Questions Per Subject (5–120)</label>
+            <input type="number" id="custom-qcount-input" min="5" max="120" value="25" oninput="refreshSelectedSubjectCounter()" />
+          </div>
+
+          <div id="custom-duration-row" class="form-group hidden">
+            <label for="custom-duration-mins">Custom Duration (Minutes, 5–240)</label>
+            <input type="number" id="custom-duration-mins" min="5" max="240" placeholder="Enter minutes (e.g., 25 or 75)" />
+          </div>
+        </div>
+
+        <!-- Subject Checkboxes -->
+        <div class="subject-selection-box">
+          <div class="subject-box-header">
+            <div>
+              <h3>Tick Subjects for This Session</h3>
+              <p class="muted-small">Smart Reshuffle automatically serves fresh unseen WAEC/JAMB/NECO questions on every retake.</p>
+            </div>
+            <span id="selected-subjects-pill" class="pill-tag">0 Subjects Selected</span>
+          </div>
+          <div id="candidate-subject-grid" class="subject-checkbox-grid"></div>
+        </div>
+
+        <div class="exam-instructions">
+          <h4>Examination Rules, Smart Reshuffle &amp; Integrity Guard</h4>
+          <ul>
+            <li><strong>Smart Reshuffle:</strong> Retaking an exam prioritizes unseen questions from the 120-question pool so you don't get the exact same set repeatedly.</li>
+            <li><strong>JAMB Keyboard Keys:</strong> Press <strong>A–D</strong> to answer, <strong>N</strong> for Next, <strong>P</strong> for Previous, <strong>R</strong> to clear/reverse your choice, and <strong>S</strong> to submit.</li>
+            <li><strong>Integrity &amp; Auto-Save:</strong> Switching browser tabs/windows during an exam logs a warning (<strong>3 warnings auto-submit</strong>). Progress auto-saves every 5 seconds.</li>
+          </ul>
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="btn-primary btn-block">Start Examination Now &rarr;</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- =========================================================
+         VIEW 2: LIVE CBT EXAMINATION ARENA
+         ========================================================= -->
+    <section id="view-exam" class="view-section">
+      <div class="exam-topbar card">
+        <div class="candidate-strip">
+          <div>
+            <span class="meta-label">Candidate:</span>
+            <strong id="live-name">Candidate</strong>
+            <span id="live-reg-badge" class="reg-pill"></span>
+          </div>
+          <span class="meta-divider">|</span>
+          <div>
+            <span class="meta-label">Class:</span>
+            <strong id="live-class">JSS 3</strong>
+          </div>
+          <span class="meta-divider">|</span>
+          <div>
+            <span class="meta-label">Answered:</span>
+            <strong id="live-answered-total">0 / 0</strong>
+          </div>
+          <span class="meta-divider">|</span>
+          <div>
+            <span class="meta-label">Tab Warnings:</span>
+            <strong id="live-tab-warnings" class="text-danger">0 / 3</strong>
+          </div>
+        </div>
+
+        <div class="timer-strip">
+          <button type="button" class="btn-outline" onclick="toggleCalculator()">🧮 Calculator</button>
+          <div class="timer-display" id="timer-container">
+            <span class="timer-label">TIME LEFT:</span>
+            <span id="live-timer">30:00</span>
+          </div>
+          <button type="button" class="btn-submit-now" onclick="promptExamSubmission()">Submit (S)</button>
+        </div>
+      </div>
+
+      <!-- Subject Switcher Tabs -->
+      <div id="subject-tabs-container" class="subject-tabs-bar"></div>
+
+      <!-- Active Question & Diagram Card -->
+      <div class="card question-arena-card">
+        <div class="question-top-meta">
+          <div class="badge-group">
+            <span id="live-subject-badge" class="subject-badge">Subject</span>
+            <span id="live-source-badge" class="source-badge">WAEC/JAMB/NECO</span>
+            <span id="live-topic-badge" class="topic-badge">Topic</span>
+          </div>
+          <span id="live-q-number" class="q-counter">Question 1 of 15</span>
+        </div>
+
+        <div id="question-content-grid" class="question-layout">
+          <div id="live-diagram-panel" class="diagram-panel hidden">
+            <div class="diagram-caption">Reference Diagram (Click image to enlarge)</div>
+            <div id="live-diagram-holder" class="diagram-holder" onclick="openDiagramModal()"></div>
+          </div>
+
+          <div class="question-prompt-panel">
+            <p id="live-question-text" class="question-prompt-text">Loading question...</p>
+            <div id="live-options-list" class="options-stack"></div>
+          </div>
+        </div>
+
+        <div class="question-nav-footer">
+          <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <button type="button" class="btn-outline" id="btn-prev" onclick="moveQuestion(-1)">&larr; Previous (P)</button>
+            <button type="button" class="btn-outline" id="btn-clear-ans" onclick="clearCurrentAnswer()">Clear Option (R)</button>
+          </div>
+          <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <button type="button" class="btn-amber" id="btn-flag" onclick="toggleFlagCurrentQuestion()">Flag for Review</button>
+            <button type="button" class="btn-primary" id="btn-next" onclick="moveQuestion(1)">Next (N) &rarr;</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Numbered Palette for Active Subject -->
+      <div class="card palette-card">
+        <div class="palette-top">
+          <h4 id="palette-title">Subject Question Palette</h4>
+          <div class="palette-legend">
+            <span><i class="legend-dot answered"></i> Answered</span>
+            <span><i class="legend-dot flagged"></i> Flagged</span>
+            <span><i class="legend-dot unanswered"></i> Unanswered</span>
+          </div>
+        </div>
+        <div id="live-palette-grid" class="palette-numbers-grid"></div>
+      </div>
+    </section>
+
+    <!-- =========================================================
+         VIEW 3: SCORE PRESENTATION & CORRECTION SLIP
+         ========================================================= -->
+    <section id="view-result" class="view-section">
+      <div class="card result-presentation-card">
+        <span class="pill-tag">Saved to Server &amp; Leaderboard</span>
+        <h2 id="result-candidate-heading">Candidate Performance Report</h2>
+        <p id="result-meta-subheading" class="muted-small">Class Level • Time Completed</p>
+
+        <div class="score-hero-row">
+          <div class="score-dial">
+            <span id="result-percent-big">0%</span>
+            <small>Score</small>
+          </div>
+
+          <div class="score-kpi-grid">
+            <div class="kpi-box">
+              <span class="kpi-label">Correct Answers</span>
+              <strong id="result-correct-count" class="text-success">0 / 0</strong>
+            </div>
+            <div class="kpi-box">
+              <span class="kpi-label">Points Earned This Exam</span>
+              <strong id="result-points-earned" style="color: var(--navy-primary);">+0 pts</strong>
+            </div>
+            <div class="kpi-box">
+              <span class="kpi-label">Current Practice Streak</span>
+              <strong id="result-streak-value" style="color: var(--amber);">0 Streak</strong>
+            </div>
+            <div class="kpi-box">
+              <span class="kpi-label">Official Remark</span>
+              <strong id="result-grade-remark">Credit</strong>
+            </div>
+          </div>
+        </div>
+
+        <div class="subject-breakdown-section">
+          <h3>Performance Breakdown by Subject</h3>
+          <div id="result-subject-cards" class="subject-score-grid"></div>
+        </div>
+
+        <div class="result-action-row">
+          <button type="button" class="btn-outline" onclick="switchPortalView('dashboard')">View Progress &amp; Leaderboard</button>
+          <button type="button" class="btn-primary" onclick="resetToCandidateLobby()">Take Another Exam (Fresh Shuffle)</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="section-split-header">
+          <h3>Question-by-Question Script Review &amp; Corrections</h3>
+          <select id="review-subject-selector" onchange="renderScriptCorrections()"></select>
+        </div>
+        <div id="script-correction-list" class="script-review-stack"></div>
+      </div>
+    </section>
+
+    <!-- =========================================================
+         VIEW 4: STUDENT PROGRESS, POINTS & CLASS LEADERBOARD
+         ========================================================= -->
+    <section id="view-dashboard" class="view-section">
+      <div class="card">
+        <div class="section-split-header admin-header-border">
+          <div>
+            <span class="pill-tag">Student Progress &amp; Class Rankings</span>
+            <h2>Progress Tracker, Points &amp; Class Leaderboard</h2>
+            <p class="muted-small">Track points earned after every exam, daily practice streak, and top performers per class.</p>
+          </div>
+          <div class="form-group" style="min-width: 220px;">
+            <label for="dashboard-student-filter">Filter Progress By Candidate</label>
+            <select id="dashboard-student-filter" onchange="renderStudentDashboard()">
+              <option value="ALL">All Candidates</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="score-kpi-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-bottom: 24px;">
+          <div class="kpi-box">
+            <span class="kpi-label">Total Points Accumulated</span>
+            <strong id="dash-total-points" style="color: var(--navy-primary);">0 pts</strong>
+          </div>
+          <div class="kpi-box">
+            <span class="kpi-label">Daily Practice Streak (40%+ Runs)</span>
+            <strong id="dash-streak" style="color: var(--amber);">0</strong>
+          </div>
+          <div class="kpi-box">
+            <span class="kpi-label">Exams Completed</span>
+            <strong id="dash-exams-count">0</strong>
+          </div>
+          <div class="kpi-box">
+            <span class="kpi-label">Average Score</span>
+            <strong id="dash-avg-score" class="text-success">0%</strong>
+          </div>
+        </div>
+
+        <h3 style="color: var(--navy-primary); font-size: 1.08rem; margin-bottom: 12px;">Saved Examination History</h3>
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Candidate (Reg ID)</th>
+                <th>Class</th>
+                <th>Subjects</th>
+                <th>Score</th>
+                <th>Points</th>
+                <th>Warnings</th>
+                <th>Date</th>
+              </tr>
+            </thead>
+            <tbody id="student-history-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Upgraded Performance-Based Class Leaderboard -->
+      <div class="card">
+        <div class="section-split-header">
+          <div>
+            <span class="pill-tag">Performance-Based Rankings</span>
+            <h3 id="lb-dynamic-title" style="color: var(--navy-primary); margin-top: 6px;">Class Hall of Fame</h3>
+            <p class="muted-small">Ranked by Performance Rating: (+3 Correct, -1 Failed, +10 Pass Bonus) &times; Accuracy %</p>
+          </div>
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <select id="leaderboard-class-filter" onchange="renderClassLeaderboard()">
+              <option value="JSS 1">JSS 1 Hall of Fame</option>
+              <option value="JSS 2">JSS 2 Hall of Fame</option>
+              <option value="JSS 3" selected>JSS 3 Hall of Fame</option>
+              <option value="SSS 1">SSS 1 Hall of Fame</option>
+              <option value="SSS 2">SSS 2 Hall of Fame</option>
+              <option value="SSS 3">SSS 3 Hall of Fame</option>
+              <option value="ALL">All Classes</option>
+            </select>
+            <select id="leaderboard-subject-filter" onchange="renderClassLeaderboard()">
+              <option value="ALL">All Subjects</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Pinned Current Student Rank -->
+        <div id="lb-my-rank-bar" class="lb-my-rank hidden"></div>
+
+        <!-- Gold / Silver / Bronze Top 3 Podium -->
+        <div id="lb-podium-grid" class="lb-podium"></div>
+
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Rank</th>
+                <th>Candidate Name</th>
+                <th>Class</th>
+                <th>Correct / Failed</th>
+                <th>Accuracy</th>
+                <th>Streak</th>
+                <th>Performance Rating</th>
+              </tr>
+            </thead>
+            <tbody id="leaderboard-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- =========================================================
+         VIEW 5: RESTRICTED EXAMINER ADMIN PANEL (ONLY WHEN UNLOCKED)
+         ========================================================= -->
+    <section id="view-admin" class="view-section">
+      <!-- Platform Usage & Score Overview -->
+      <div class="card">
+        <div class="section-split-header admin-header-border">
+          <div>
+            <span class="pill-tag">Examiner Monitor • 120-Question Bank Target</span>
+            <h2>Examiner Admin Board — WAEC/JAMB/NECO Pool &amp; Analytics</h2>
+            <p class="muted-small">Upload up to 120 past questions per subject/class, monitor scores, spot weak topics, and export broadsheets.</p>
+          </div>
+          <div class="admin-utility-btns">
+            <button type="button" class="btn-outline" onclick="exportBroadsheetCSV()">Export Broadsheet (.csv)</button>
+            <button type="button" class="btn-outline" onclick="downloadQuestionBankBackup()">Backup Bank (.json)</button>
+            <label class="btn-outline upload-json-label">
+              Restore Bank (.json)
+              <input type="file" accept=".json" onchange="restoreQuestionBankBackup(event)" hidden />
+            </label>
+          </div>
+        </div>
+
+        <div class="score-kpi-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+          <div class="kpi-box">
+            <span class="kpi-label">Total Exam Attempts</span>
+            <strong id="admin-kpi-attempts" style="color: var(--navy-primary);">0</strong>
+          </div>
+          <div class="kpi-box">
+            <span class="kpi-label">Unique Candidates Tested</span>
+            <strong id="admin-kpi-candidates">0</strong>
+          </div>
+          <div class="kpi-box">
+            <span class="kpi-label">Platform Average Score</span>
+            <strong id="admin-kpi-avg" class="text-success">0%</strong>
+          </div>
+          <div class="kpi-box">
+            <span class="kpi-label">Total Bank Questions</span>
+            <strong id="admin-kpi-questions">0</strong>
+          </div>
+        </div>
+      </div>
+
+      <!-- Weak-Topic Performance Analytics -->
+      <div class="card">
+        <div class="section-split-header">
+          <div>
+            <span class="pill-tag">Diagnostic Insight</span>
+            <h3 style="color: var(--navy-primary); margin-top: 6px;">Weak-Topic Performance Analytics</h3>
+            <p class="muted-small">Topics with lower accuracy highlight areas where students need revision lessons.</p>
+          </div>
+        </div>
+        <div id="weak-topics-grid" class="weak-topics-grid"></div>
+      </div>
+
+      <!-- Bulk CSV Question Importer (File OR Direct Paste) -->
+      <div class="card">
+        <div class="section-split-header">
+          <div>
+            <span class="pill-tag">Fast Batch Upload (120+ Rows Ready)</span>
+            <h3 style="color: var(--navy-primary); margin-top: 6px;">Bulk CSV Question Importer</h3>
+            <p class="muted-small">Columns: <code>class_level,subject,topic,exam_source,prompt,option_a,option_b,option_c,option_d,correct_option,explanation</code> (<code>exam_source</code> is optional).</p>
+          </div>
+          <button type="button" class="btn-outline" onclick="downloadSampleCSVTemplate()">Download Sample CSV</button>
+        </div>
+
+        <div class="bulk-csv-row">
+          <input type="file" id="bulk-csv-input" accept=".csv,text/csv" />
+          <button type="button" class="btn-primary" onclick="uploadBulkCSV()">Import CSV File</button>
+        </div>
+
+        <div class="form-group full-width" style="margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--border-color);">
+          <label for="bulk-csv-textarea">Or Paste Raw CSV Text Directly (No File Needed)</label>
+          <textarea id="bulk-csv-textarea" rows="5" placeholder='class_level,subject,topic,exam_source,prompt,option_a,option_b,option_c,option_d,correct_option,explanation&#10;"SSS 3","Physics","Gravitational, Electric &amp; Magnetic Fields","JAMB",...'></textarea>
+          <div style="margin-top: 8px;">
+            <button type="button" class="btn-primary" onclick="uploadRawCSVText()">Import Pasted CSV Text</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Single Question Uploader & Topic Pills -->
+      <div class="card">
+        <div class="topic-directory-banner">
+          <div class="topic-banner-top">
+            <div>
+              <strong>Selected Subject Pool:</strong>
+              <span id="admin-subject-progress-text">0 / 120 Questions Uploaded</span>
+            </div>
+            <span class="muted-small">Click any topic pill to select it:</span>
+          </div>
+          <div id="admin-topic-pills" class="topic-pills-wrap"></div>
+        </div>
+
+        <form id="admin-question-form" class="form-grid" onsubmit="handleAdminQuestionSave(event)">
+          <div class="form-group">
+            <label for="admin-class-select">1. Target Class Level</label>
+            <select id="admin-class-select" onchange="syncAdminSubjectDropdown()" required>
+              <option value="JSS 1">JSS 1</option>
+              <option value="JSS 2">JSS 2</option>
+              <option value="JSS 3" selected>JSS 3</option>
+              <option value="SSS 1">SSS 1</option>
+              <option value="SSS 2">SSS 2</option>
+              <option value="SSS 3">SSS 3</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="admin-subject-select">2. Subject (Strictly Isolated Pool)</label>
+            <select id="admin-subject-select" onchange="syncAdminTopicDropdown()" required></select>
+          </div>
+
+          <div class="form-group">
+            <label for="admin-topic-select">3. Syllabus Topic</label>
+            <select id="admin-topic-select" required></select>
+          </div>
+
+          <div class="form-group">
+            <label for="admin-source-select">4. Exam Board / Past Question Source</label>
+            <select id="admin-source-select" required>
+              <option value="WAEC">WAEC Past Question</option>
+              <option value="JAMB">JAMB (UTME) Past Question</option>
+              <option value="NECO">NECO Past Question</option>
+              <option value="BECE / Junior WAEC">BECE / Junior WAEC</option>
+              <option value="School Exam">School Standard Question</option>
+            </select>
+          </div>
+
+          <div class="form-group full-width">
+            <label for="admin-custom-topic">Or Enter a Custom Topic Name (Optional)</label>
+            <input type="text" id="admin-custom-topic" placeholder="Leave blank to use selected syllabus topic" />
+          </div>
+
+          <div class="form-group full-width">
+            <label for="admin-question-prompt">5. Question Prompt</label>
+            <textarea id="admin-question-prompt" rows="3" placeholder="Type the exact WAEC / JAMB / NECO question here..." required></textarea>
+          </div>
+
+          <div class="form-group full-width">
+            <label for="admin-diagram-input">6. Reference Diagram (Optional — PNG, JPG, SVG)</label>
+            <input type="file" id="admin-diagram-input" accept="image/*" onchange="handleAdminDiagramSelect(event)" />
+            <div id="admin-diagram-preview-box" class="diagram-preview-strip hidden">
+              <img id="admin-diagram-preview-img" src="" alt="Uploaded Diagram Preview" />
+              <button type="button" class="btn-danger-sm" onclick="clearAdminDiagramInput()">Remove Diagram</button>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="admin-opt-a">Option A</label>
+            <input type="text" id="admin-opt-a" placeholder="Enter Option A" required />
+          </div>
+
+          <div class="form-group">
+            <label for="admin-opt-b">Option B</label>
+            <input type="text" id="admin-opt-b" placeholder="Enter Option B" required />
+          </div>
+
+          <div class="form-group">
+            <label for="admin-opt-c">Option C</label>
+            <input type="text" id="admin-opt-c" placeholder="Enter Option C" required />
+          </div>
+
+          <div class="form-group">
+            <label for="admin-opt-d">Option D</label>
+            <input type="text" id="admin-opt-d" placeholder="Enter Option D" required />
+          </div>
+
+          <div class="form-group">
+            <label for="admin-correct-option">Correct Answer</label>
+            <select id="admin-correct-option" required>
+              <option value="0">Option A</option>
+              <option value="1">Option B</option>
+              <option value="2">Option C</option>
+              <option value="3">Option D</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="admin-explanation-input">Explanation / Marking Note (Optional)</label>
+            <input type="text" id="admin-explanation-input" placeholder="Optional explanation shown on result review" />
+          </div>
+
+          <div class="form-actions full-width">
+            <button type="submit" class="btn-primary">Save Question to Subject</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Saved Candidate Results Monitor -->
+      <div class="card">
+        <div class="section-split-header">
+          <h3>Saved Candidate Exam Records</h3>
+          <button type="button" class="btn-danger-sm" onclick="clearAllSavedRecords()">Reset Saved Records</button>
+        </div>
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Candidate (Reg ID)</th>
+                <th>Class</th>
+                <th>Subjects</th>
+                <th>Score</th>
+                <th>Points</th>
+                <th>Warnings</th>
+                <th>Date</th>
+              </tr>
+            </thead>
+            <tbody id="admin-records-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Uploaded Questions Repository -->
+      <div class="card">
+        <div class="section-split-header">
+          <h3>Uploaded Question Repository (<span id="admin-total-count">0</span> Questions)</h3>
+          <select id="admin-filter-pool" onchange="renderAdminRepository()"></select>
+        </div>
+        <div id="admin-repository-list" class="script-review-stack"></div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- =========================================================
+       SCHOLARS CBT — PROFESSIONAL FOOTER
+       ========================================================= -->
+  <footer class="site-footer" id="site-footer">
+    <div class="footer-main">
+      <div class="container footer-grid">
+        <div class="footer-brand">
+          <div class="footer-logo">
+            <span class="footer-logo-badge">CBT</span>
+            <div>
+              <h2>Scholars Standard</h2>
+              <span>Examination Portal</span>
+            </div>
+          </div>
+          <p class="footer-description">
+            A modern computer-based examination platform designed
+            to support academic excellence, effective assessment,
+            student development and performance tracking.
+          </p>
+          <div class="footer-status">
+            <span class="status-indicator"></span>
+            Examination Portal
+          </div>
+        </div>
+
+        <div class="footer-column">
+          <h3>Quick Navigation</h3>
+          <ul>
+            <li><a href="#" onclick="switchPortalView('student'); return false;">Exam Lobby</a></li>
+            <li><a href="#" onclick="switchPortalView('dashboard'); return false;">Student Dashboard</a></li>
+            <li><a href="#" onclick="resetToCandidateLobby(); return false;">Start Examination</a></li>
+            <li><a href="#site-footer">Contact &amp; Support</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-column">
+          <h3>Examination Services</h3>
+          <ul>
+            <li><a href="#" onclick="switchPortalView('student'); return false;">JSS 1 &amp; JSS 2 Examinations</a></li>
+            <li><a href="#" onclick="switchPortalView('student'); return false;">JSS 3 Examinations</a></li>
+            <li><a href="#" onclick="switchPortalView('student'); return false;">SSS 1 Examinations</a></li>
+            <li><a href="#" onclick="switchPortalView('student'); return false;">SSS 2 Examinations</a></li>
+            <li><a href="#" onclick="switchPortalView('student'); return false;">SSS 3 Examinations</a></li>
+            <li><a href="#" onclick="switchPortalView('dashboard'); return false;">Performance Analytics</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-column">
+          <h3>Important Information</h3>
+          <ul>
+            <li><a href="#view-lobby">Examination Guidelines</a></li>
+            <li><a href="#view-exam">CBT Examination Rules</a></li>
+            <li><a href="#view-dashboard">Student Performance</a></li>
+            <li><a href="#view-result">Results &amp; Corrections</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer-trust">
+      <div class="container footer-trust-content">
+        <div><span class="trust-icon">✓</span><span>Structured Examination Environment</span></div>
+        <div><span class="trust-icon">✓</span><span>Automated Progress Saving</span></div>
+        <div><span class="trust-icon">✓</span><span>Performance Monitoring</span></div>
+        <div><span class="trust-icon">✓</span><span>Academic Excellence</span></div>
+      </div>
+    </div>
+
+    <div class="footer-bottom">
+      <div class="container footer-bottom-content">
+        <p>
+          &copy; <span id="footer-year"></span>
+          <strong>Scholars Standard Examination Portal.</strong>
+          All Rights Reserved.
+        </p>
+        <p class="footer-credit">Designed for Learning. Built for Excellence.</p>
+        <button type="button" class="back-to-top" onclick="scrollToTop()" aria-label="Back to top">
+          ↑ <span>Back to Top</span>
+        </button>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Floating JAMB Scientific/Standard Calculator -->
+  <div id="floating-calculator" class="calc-widget hidden">
+    <div class="calc-header">
+      <strong>CBT Calculator</strong>
+      <button type="button" class="calc-close" onclick="toggleCalculator()">&times;</button>
+    </div>
+    <input type="text" id="calc-display" class="calc-screen" value="0" readonly />
+    <div class="calc-keypad">
+      <button type="button" onclick="calcClear()">C</button>
+      <button type="button" onclick="calcBackspace()">⌫</button>
+      <button type="button" onclick="calcToggleSign()">+/-</button>
+      <button type="button" class="calc-op" onclick="calcSetOp('/')">÷</button>
+
+      <button type="button" onclick="calcDigit('7')">7</button>
+      <button type="button" onclick="calcDigit('8')">8</button>
+      <button type="button" onclick="calcDigit('9')">9</button>
+      <button type="button" class="calc-op" onclick="calcSetOp('*')">×</button>
+
+      <button type="button" onclick="calcDigit('4')">4</button>
+      <button type="button" onclick="calcDigit('5')">5</button>
+      <button type="button" onclick="calcDigit('6')">6</button>
+      <button type="button" class="calc-op" onclick="calcSetOp('-')">−</button>
+
+      <button type="button" onclick="calcDigit('1')">1</button>
+      <button type="button" onclick="calcDigit('2')">2</button>
+      <button type="button" class="calc-op" onclick="calcDigit('3')">3</button>
+      <button type="button" class="calc-op" onclick="calcSetOp('+')">+</button>
+
+      <button type="button" onclick="calcDigit('0')" style="grid-column: span 2;">0</button>
+      <button type="button" onclick="calcDecimal()">.</button>
+      <button type="button" class="calc-eq" onclick="calcEquals()">=</button>
+    </div>
+  </div>
+
+  <!-- Diagram Zoom Modal -->
+  <div id="diagram-modal" class="diagram-modal hidden" onclick="closeDiagramModal()">
+    <div class="diagram-modal-card" onclick="event.stopPropagation()">
+      <div class="diagram-modal-header">
+        <strong>Reference Diagram Inspection</strong>
+        <button type="button" class="btn-danger-sm" onclick="closeDiagramModal()">Close &times;</button>
+      </div>
+      <div id="diagram-modal-body" class="diagram-modal-body"></div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      const params = new URLSearchParams(window.location.search);
+      const showExaminer = params.get("examiner") === "1";
+
+      const adminBtn = document.getElementById("btn-admin-view");
+      const adminSection = document.getElementById("view-admin");
+
+      if (adminBtn) {
+        adminBtn.classList.toggle("hidden", !showExaminer);
+      }
+
+      if (!showExaminer && adminSection && adminSection.classList.contains("active")) {
+        adminSection.classList.remove("active");
+        document.getElementById("view-lobby")?.classList.add("active");
+      }
+    })();
+  </script>
+  
+
+  <script src="/static/script.js"></script>
+</body>
+</html>
