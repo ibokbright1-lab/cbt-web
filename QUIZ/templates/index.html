@@ -8,7 +8,7 @@
 </head>
 <body>
 
-  <!-- Top Navigation Header -->
+  <!-- Clean Top Header (Brand + Candidate Identity) -->
   <header class="navbar">
     <div class="container nav-content">
       <div class="nav-top-row">
@@ -20,7 +20,7 @@
           </div>
         </div>
 
-        <!-- Styled Candidate Identity + Aligned Sign Out Button -->
+        <!-- Candidate Identity Pill + Sign Out -->
         <div id="nav-profile-badge" class="nav-profile-badge hidden">
           <div class="profile-identity">
             <span id="nav-profile-avatar" class="profile-avatar" aria-hidden="true">SC</span>
@@ -29,18 +29,6 @@
           <button type="button" class="btn-signout" onclick="logoutStudentProfile()">Sign Out</button>
         </div>
       </div>
-
-      <nav class="nav-switcher" id="top-nav-controls" aria-label="Portal Navigation">
-        <button type="button" id="btn-student-view" class="nav-btn active" onclick="switchPortalView('student')">
-          Exam Lobby
-        </button>
-        <button type="button" id="btn-dashboard-view" class="nav-btn" onclick="switchPortalView('dashboard')">
-          Progress &amp; Leaderboard
-        </button>
-        <button type="button" id="btn-admin-view" class="nav-btn nav-btn-admin hidden" onclick="openAdminGate()">
-          Examiner Admin 🔒
-        </button>
-      </nav>
     </div>
   </header>
 
@@ -65,9 +53,9 @@
          ========================================================= -->
     <section id="view-lobby" class="card view-section active">
       <div class="card-header">
-        <span class="pill-tag">WAEC • JAMB • NECO Past Questions • Smart Reshuffle</span>
+        <span class="pill-tag">WAEC • JAMB • NECO Past Questions • 250-Question Smart Pool</span>
         <h2>Candidate Registration, Question Count &amp; Duration Setup</h2>
-        <p>Sign in with your school, class, full name, and 4-digit PIN, then choose your question count (up to 120), duration, and subjects.</p>
+        <p>Sign in with your school, class, full name, and 4-digit PIN, then choose your question count (up to 250), duration, and subjects.</p>
       </div>
 
       <!-- Manual Profile Sign-In / Registration Gate -->
@@ -75,7 +63,7 @@
         <div class="auth-gate-header">
           <div>
             <h3>Student Profile Verification (School + Name + 4-Digit PIN)</h3>
-            <p class="muted-small">Sign in with your exact registered name and 4-digit PIN to unlock your class leaderboard and personal ledger.</p>
+            <p class="muted-small">Sign in with your exact registered name and 4-digit PIN to unlock your personal dashboard, tournaments, and class leaderboard.</p>
           </div>
           <div class="auth-mode-tabs">
             <button type="button" id="tab-auth-login" class="btn-primary" onclick="setAuthMode('login')">Sign In</button>
@@ -147,8 +135,9 @@
               <option value="45">45 Questions / Subject</option>
               <option value="60">60 Questions / Subject (Standard JAMB)</option>
               <option value="100">100 Questions / Subject</option>
-              <option value="120">120 Questions / Subject (Full Bank)</option>
-              <option value="CUSTOM">Custom Count (5–120)</option>
+              <option value="150">150 Questions / Subject</option>
+              <option value="250">250 Questions / Subject (Full Bank)</option>
+              <option value="CUSTOM">Custom Count (5–250)</option>
             </select>
           </div>
 
@@ -167,8 +156,8 @@
 
         <div class="form-grid" style="margin-top: 14px;">
           <div id="custom-qcount-row" class="form-group hidden">
-            <label for="custom-qcount-input">Custom Questions Per Subject (5–120)</label>
-            <input type="number" id="custom-qcount-input" min="5" max="120" value="25" oninput="refreshSelectedSubjectCounter()" />
+            <label for="custom-qcount-input">Custom Questions Per Subject (5–250)</label>
+            <input type="number" id="custom-qcount-input" min="5" max="250" value="25" oninput="refreshSelectedSubjectCounter()" />
           </div>
 
           <div id="custom-duration-row" class="form-group hidden">
@@ -192,7 +181,7 @@
         <div class="exam-instructions">
           <h4>Examination Rules, Smart Reshuffle &amp; Integrity Guard</h4>
           <ul>
-            <li><strong>Smart Reshuffle:</strong> Retaking an exam prioritizes unseen questions from the 120-question pool so you don't get the exact same set repeatedly.</li>
+            <li><strong>Smart Reshuffle:</strong> Retaking an exam prioritizes unseen questions from the 250-question pool so you don't get the exact same set repeatedly.</li>
             <li><strong>JAMB Keyboard Keys:</strong> Press <strong>A–D</strong> to answer, <strong>N</strong> for Next, <strong>P</strong> for Previous, <strong>R</strong> to clear/reverse your choice, and <strong>S</strong> to submit.</li>
             <li><strong>Integrity &amp; Auto-Save:</strong> Switching browser tabs/windows during an exam logs a warning (<strong>3 warnings auto-submit</strong>). Progress auto-saves every 5 seconds.</li>
           </ul>
@@ -258,12 +247,12 @@
 
         <div id="question-content-grid" class="question-layout">
           <div id="live-diagram-panel" class="diagram-panel hidden">
-            <div class="diagram-caption">Reference Diagram (Click image to enlarge)</div>
+            <div class="diagram-caption">Reference Diagram / Chart (Click to enlarge)</div>
             <div id="live-diagram-holder" class="diagram-holder" onclick="openDiagramModal()"></div>
           </div>
 
           <div class="question-prompt-panel">
-            <p id="live-question-text" class="question-prompt-text">Loading question...</p>
+            <div id="live-question-text" class="question-prompt-text">Loading question...</div>
             <div id="live-options-list" class="options-stack"></div>
           </div>
         </div>
@@ -335,8 +324,9 @@
         </div>
 
         <div class="result-action-row">
-          <button type="button" class="btn-outline" onclick="switchPortalView('dashboard')">View Progress &amp; Leaderboard</button>
-          <button type="button" class="btn-primary" onclick="resetToCandidateLobby()">Take Another Exam (Fresh Shuffle)</button>
+          <button type="button" class="btn-outline" onclick="switchPortalView('dashboard')">View Personal Dashboard</button>
+          <button type="button" class="btn-outline" onclick="switchPortalView('leaderboard')">View Leaderboard</button>
+          <button type="button" class="btn-primary" onclick="resetToCandidateLobby()">Take Another Exam</button>
         </div>
       </div>
 
@@ -350,68 +340,14 @@
     </section>
 
     <!-- =========================================================
-         VIEW 4: STUDENT PROGRESS, POINTS & CLASS LEADERBOARD
+         VIEW 4: CLASS LEADERBOARD & HALL OF FAME
          ========================================================= -->
-    <section id="view-dashboard" class="view-section">
-      <div class="card">
-        <div class="section-split-header admin-header-border">
-          <div>
-            <span class="pill-tag">Student Progress &amp; Class Rankings</span>
-            <h2>Progress Tracker, Points &amp; Class Leaderboard</h2>
-            <p class="muted-small">Track points earned after every exam, daily practice streak, and top performers per class.</p>
-          </div>
-          <div class="form-group" style="min-width: 220px;">
-            <label for="dashboard-student-filter">Filter Progress By Candidate</label>
-            <select id="dashboard-student-filter" onchange="renderStudentDashboard()">
-              <option value="ALL">All Candidates</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="score-kpi-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-bottom: 24px;">
-          <div class="kpi-box">
-            <span class="kpi-label">Total Points Accumulated</span>
-            <strong id="dash-total-points" style="color: var(--navy-primary);">0 pts</strong>
-          </div>
-          <div class="kpi-box">
-            <span class="kpi-label">Daily Practice Streak (40%+ Runs)</span>
-            <strong id="dash-streak" style="color: var(--amber);">0</strong>
-          </div>
-          <div class="kpi-box">
-            <span class="kpi-label">Exams Completed</span>
-            <strong id="dash-exams-count">0</strong>
-          </div>
-          <div class="kpi-box">
-            <span class="kpi-label">Average Score</span>
-            <strong id="dash-avg-score" class="text-success">0%</strong>
-          </div>
-        </div>
-
-        <h3 style="color: var(--navy-primary); font-size: 1.08rem; margin-bottom: 12px;">Saved Examination History</h3>
-        <div class="table-responsive">
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th>Candidate (Reg ID)</th>
-                <th>Class</th>
-                <th>Subjects</th>
-                <th>Score</th>
-                <th>Points</th>
-                <th>Warnings</th>
-                <th>Date</th>
-              </tr>
-            </thead>
-            <tbody id="student-history-tbody"></tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- Upgraded Performance-Based Class Leaderboard -->
+    <section id="view-leaderboard" class="view-section">
       <div class="card">
         <div class="section-split-header">
           <div>
             <span class="pill-tag">Performance-Based Rankings</span>
-            <h3 id="lb-dynamic-title" style="color: var(--navy-primary); margin-top: 6px;">Class Hall of Fame</h3>
+            <h2 id="lb-dynamic-title" style="color: var(--navy-primary); margin-top: 6px;">Class Hall of Fame</h2>
             <p class="muted-small">Ranked by Performance Rating: (+3 Correct, -1 Failed, +10 Pass Bonus) &times; Accuracy %</p>
           </div>
           <div style="display:flex; gap:8px; flex-wrap:wrap;">
@@ -430,10 +366,7 @@
           </div>
         </div>
 
-        <!-- Pinned Current Student Rank -->
         <div id="lb-my-rank-bar" class="lb-my-rank hidden"></div>
-
-        <!-- Gold / Silver / Bronze Top 3 Podium -->
         <div id="lb-podium-grid" class="lb-podium"></div>
 
         <div class="table-responsive">
@@ -456,16 +389,247 @@
     </section>
 
     <!-- =========================================================
-         VIEW 5: RESTRICTED EXAMINER ADMIN PANEL (ONLY WHEN UNLOCKED)
+         VIEW 5: SCHOLARS SUPER CUP (WORLD CUP TOURNAMENT BRACKET)
+         ========================================================= -->
+    <section id="view-tournaments" class="view-section">
+      <div class="card">
+        <!-- Hero Banner + Live Status -->
+        <div class="wc-hero-banner">
+          <div>
+            <span id="wc-status-badge" class="pill-tag" style="background:#fef3c7; color:#92400e; border-color:#fbbf24;">
+              CLOSED • Waiting for Examiner
+            </span>
+            <h2 id="wc-cup-title">Scholars Super Cup — World Cup Edition</h2>
+            <p id="wc-stage-desc">
+              Each class (JSS 1 – SSS 3) produces one verified Class Representative. Junior &amp; Senior Division Champions clash in the Grand Finale for the School Crown.
+            </p>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:8px; align-items:flex-end;">
+            <button type="button" id="wc-join-btn" class="btn-amber" onclick="openTournamentBriefingModal()">
+              View Briefing &amp; Join Round &rarr;
+            </button>
+            <small id="wc-eligibility-note" style="color:#dbeafe; font-size:0.78rem;">
+              Only signed-in members can compete when the Examiner opens a round.
+            </small>
+          </div>
+        </div>
+
+        <!-- 3-Stage Progress Stepper -->
+        <div class="wc-stepper">
+          <div id="wc-step-qualifiers" class="wc-step active">
+            <span class="wc-step-num">Stage 1 • Qualifiers</span>
+            <strong>Class Representatives</strong>
+            <span>Top scorer in each class (JSS 1–3 &amp; SSS 1–3) claims their class slot.</span>
+          </div>
+          <div id="wc-step-playoffs" class="wc-step">
+            <span class="wc-step-num">Stage 2 • Division Playoffs</span>
+            <strong>Junior vs. Senior Wings</strong>
+            <span>Class Reps battle in their division to crown Junior &amp; Senior Champions.</span>
+          </div>
+          <div id="wc-step-finale" class="wc-step">
+            <span class="wc-step-num">Stage 3 • Grand Finale</span>
+            <strong>Overall School Champion</strong>
+            <span>Junior Champion ⚔️ Senior Champion clash for the Super Cup trophy.</span>
+          </div>
+        </div>
+
+        <!-- Visual World Cup Knockout Bracket Board -->
+        <div class="wc-bracket-board">
+          <!-- Junior Wing -->
+          <div class="wc-wing">
+            <div class="wc-wing-title">🛡️ Junior Wing (JSS 1 – JSS 3)</div>
+            <div id="wc-junior-slots" style="display:flex; flex-direction:column; gap:10px;"></div>
+          </div>
+
+          <!-- Center Grand Finale -->
+          <div class="wc-finale-center">
+            <span class="pill-tag" style="background:rgba(255,255,255,0.16); color:#fde68a; border-color:#fbbf24; align-self:center;">
+              🏆 Grand Finale Matchup
+            </span>
+            <div class="wc-vs-row">
+              <div class="wc-finalist-box">
+                <small>Junior Champion</small>
+                <strong id="wc-junior-champ-name">TBD</strong>
+                <span id="wc-junior-champ-meta" style="font-size:0.72rem; color:#dbeafe;">Awaiting Playoffs</span>
+              </div>
+              <span class="wc-vs-pill">VS</span>
+              <div class="wc-finalist-box">
+                <small>Senior Champion</small>
+                <strong id="wc-senior-champ-name">TBD</strong>
+                <span id="wc-senior-champ-meta" style="font-size:0.72rem; color:#dbeafe;">Awaiting Playoffs</span>
+              </div>
+            </div>
+
+            <div class="wc-champion-crown">
+              <span>👑 Overall School Champion</span>
+              <strong id="wc-overall-champ-name">To Be Crowned</strong>
+              <div id="wc-overall-champ-meta" style="font-size:0.76rem; color:#92400e; margin-top:2px;">
+                Awaiting Grand Finale
+              </div>
+            </div>
+          </div>
+
+          <!-- Senior Wing -->
+          <div class="wc-wing senior">
+            <div class="wc-wing-title">⚔️ Senior Wing (SSS 1 – SSS 3)</div>
+            <div id="wc-senior-slots" style="display:flex; flex-direction:column; gap:10px;"></div>
+          </div>
+        </div>
+
+        <!-- Live Matchup & Results Ledger -->
+        <div class="section-split-header" style="margin-top: 10px;">
+          <div>
+            <h3 style="color: var(--navy-primary);">Official Tournament Results &amp; Opponents</h3>
+            <p class="muted-small">Ranked by Points, Accuracy %, and Speed Bonus (faster accurate finish wins ties).</p>
+          </div>
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <select id="tournament-stage-filter" onchange="renderTournamentStandings()">
+              <option value="ALL">All Stages</option>
+              <option value="qualifiers">Stage 1: Qualifiers</option>
+              <option value="playoffs">Stage 2: Division Playoffs</option>
+              <option value="finale">Stage 3: Grand Finale</option>
+            </select>
+            <select id="tournament-division-filter" onchange="renderTournamentStandings()">
+              <option value="ALL">All Divisions</option>
+              <option value="JSS">Junior Wing (JSS 1–3)</option>
+              <option value="SSS">Senior Wing (SSS 1–3)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Rank</th>
+                <th>Member</th>
+                <th>Stage &amp; Class</th>
+                <th>Score</th>
+                <th>Speed Bonus</th>
+                <th>Total Points</th>
+                <th>Date</th>
+              </tr>
+            </thead>
+            <tbody id="tournament-standings-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- =========================================================
+         VIEW 6: PERSONAL STUDENT DASHBOARD & PROFILE PHOTO
+         ========================================================= -->
+    <section id="view-dashboard" class="view-section">
+      <div class="card">
+        <div class="personal-profile-hero">
+          <div class="personal-profile-left">
+            <div id="personal-avatar-lg" class="personal-avatar-lg">SC</div>
+            <div>
+              <span class="pill-tag">Personal Student Profile</span>
+              <h2 id="personal-name-heading" style="color: var(--navy-primary); margin-top: 6px;">Sign In to View Your Profile</h2>
+              <p id="personal-meta-text" class="muted-small">Sign in on the Exam tab to track your personal advancement, photo, and streak.</p>
+            </div>
+          </div>
+
+          <div>
+            <label class="btn-outline upload-json-label" id="avatar-upload-label">
+              📷 Upload Profile Photo
+              <input type="file" id="personal-avatar-input" accept="image/*" onchange="handleProfilePhotoUpload(event)" hidden />
+            </label>
+          </div>
+        </div>
+
+        <div class="score-kpi-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-bottom: 24px;">
+          <div class="kpi-box">
+            <span class="kpi-label">My Total Points</span>
+            <strong id="dash-total-points" style="color: var(--navy-primary);">0 pts</strong>
+          </div>
+          <div class="kpi-box">
+            <span class="kpi-label">My Practice Streak (40%+ Runs)</span>
+            <strong id="dash-streak" style="color: var(--amber);">0 🔥</strong>
+          </div>
+          <div class="kpi-box">
+            <span class="kpi-label">My Exams Completed</span>
+            <strong id="dash-exams-count">0</strong>
+          </div>
+          <div class="kpi-box">
+            <span class="kpi-label">My Average Score</span>
+            <strong id="dash-avg-score" class="text-success">0%</strong>
+          </div>
+        </div>
+
+        <h3 style="color: var(--navy-primary); font-size: 1.08rem; margin-bottom: 12px;">My Personal Examination History</h3>
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Candidate (Reg ID)</th>
+                <th>Class</th>
+                <th>Subjects</th>
+                <th>Score</th>
+                <th>Points</th>
+                <th>Warnings</th>
+                <th>Date</th>
+              </tr>
+            </thead>
+            <tbody id="student-history-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- =========================================================
+         VIEW 7: RESTRICTED EXAMINER ADMIN PANEL (ONLY WHEN UNLOCKED)
          ========================================================= -->
     <section id="view-admin" class="view-section">
+      <!-- Examiner-Only World Cup Tournament Control -->
+      <div class="card">
+        <div class="section-split-header">
+          <div>
+            <span class="pill-tag">Examiner Only • Super Cup Control</span>
+            <h3 style="color: var(--navy-primary); margin-top: 6px;">World Cup Tournament Stage Controller</h3>
+            <p class="muted-small">Students cannot start any tournament round. Open, pause, advance stages, or reset the cup here.</p>
+          </div>
+          <span id="admin-wc-status-text" class="pill-tag" style="background:#fef2f2; color:#dc2626; border-color:#fca5a5;">
+            Status: CLOSED
+          </span>
+        </div>
+
+        <div class="form-grid-auto" style="margin-bottom: 14px;">
+          <div class="form-group">
+            <label for="admin-wc-cup-name">Tournament Name</label>
+            <input type="text" id="admin-wc-cup-name" value="Scholars Super Cup" placeholder="e.g., Term 1 Scholars Super Cup" />
+          </div>
+          <div class="form-group">
+            <label for="admin-wc-stage-select">Active Stage</label>
+            <select id="admin-wc-stage-select">
+              <option value="qualifiers">Stage 1: Class Qualifiers (Pick 6 Class Reps)</option>
+              <option value="playoffs">Stage 2: Division Playoffs (Junior &amp; Senior Wings)</option>
+              <option value="finale">Stage 3: Grand Finale (Junior Champ vs. Senior Champ)</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <button type="button" class="btn-primary" onclick="updateTournamentControl(true)">
+            ▶ Open / Activate Selected Stage
+          </button>
+          <button type="button" class="btn-amber" onclick="updateTournamentControl(false)">
+            ⏸ Pause / Close Round
+          </button>
+          <button type="button" class="btn-danger-sm" onclick="resetTournamentCup()">
+            🗑 Reset Entire Cup
+          </button>
+        </div>
+      </div>
+
       <!-- Platform Usage & Score Overview -->
       <div class="card">
         <div class="section-split-header admin-header-border">
           <div>
-            <span class="pill-tag">Examiner Monitor • 120-Question Bank Target</span>
+            <span class="pill-tag">Examiner Monitor • 250-Question Bank Target</span>
             <h2>Examiner Admin Board — WAEC/JAMB/NECO Pool &amp; Analytics</h2>
-            <p class="muted-small">Upload up to 120 past questions per subject/class, monitor scores, spot weak topics, and export broadsheets.</p>
+            <p class="muted-small">Upload up to 250 past questions per subject/class (with diagrams, tables &amp; charts), monitor scores, and export broadsheets.</p>
           </div>
           <div class="admin-utility-btns">
             <button type="button" class="btn-outline" onclick="exportBroadsheetCSV()">Export Broadsheet (.csv)</button>
@@ -513,9 +677,9 @@
       <div class="card">
         <div class="section-split-header">
           <div>
-            <span class="pill-tag">Fast Batch Upload (120+ Rows Ready)</span>
+            <span class="pill-tag">Fast Batch Upload (250+ Rows Ready • Supports Tables &amp; SVG)</span>
             <h3 style="color: var(--navy-primary); margin-top: 6px;">Bulk CSV Question Importer</h3>
-            <p class="muted-small">Columns: <code>class_level,subject,topic,exam_source,prompt,option_a,option_b,option_c,option_d,correct_option,explanation</code> (<code>exam_source</code> is optional).</p>
+            <p class="muted-small">Columns: <code>class_level,subject,topic,exam_source,prompt,diagram_svg,option_a,option_b,option_c,option_d,correct_option,explanation</code> (<code>exam_source</code> &amp; <code>diagram_svg</code> are optional).</p>
           </div>
           <button type="button" class="btn-outline" onclick="downloadSampleCSVTemplate()">Download Sample CSV</button>
         </div>
@@ -527,7 +691,7 @@
 
         <div class="form-group full-width" style="margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--border-color);">
           <label for="bulk-csv-textarea">Or Paste Raw CSV Text Directly (No File Needed)</label>
-          <textarea id="bulk-csv-textarea" rows="5" placeholder='class_level,subject,topic,exam_source,prompt,option_a,option_b,option_c,option_d,correct_option,explanation&#10;"SSS 3","Physics","Gravitational, Electric &amp; Magnetic Fields","JAMB",...'></textarea>
+          <textarea id="bulk-csv-textarea" rows="5" placeholder='class_level,subject,topic,exam_source,prompt,diagram_svg,option_a,option_b,option_c,option_d,correct_option,explanation'></textarea>
           <div style="margin-top: 8px;">
             <button type="button" class="btn-primary" onclick="uploadRawCSVText()">Import Pasted CSV Text</button>
           </div>
@@ -540,7 +704,7 @@
           <div class="topic-banner-top">
             <div>
               <strong>Selected Subject Pool:</strong>
-              <span id="admin-subject-progress-text">0 / 120 Questions Uploaded</span>
+              <span id="admin-subject-progress-text">0 / 250 Questions Uploaded</span>
             </div>
             <span class="muted-small">Click any topic pill to select it:</span>
           </div>
@@ -587,17 +751,22 @@
           </div>
 
           <div class="form-group full-width">
-            <label for="admin-question-prompt">5. Question Prompt</label>
-            <textarea id="admin-question-prompt" rows="3" placeholder="Type the exact WAEC / JAMB / NECO question here..." required></textarea>
+            <label for="admin-question-prompt">5. Question Prompt (Supports HTML Tables for Math Frequency &amp; Economics Schedules)</label>
+            <textarea id="admin-question-prompt" rows="3" placeholder="Type the exact question here. You can include &lt;table class='question-table'&gt;...&lt;/table&gt; for frequency or economics tables." required></textarea>
           </div>
 
           <div class="form-group full-width">
-            <label for="admin-diagram-input">6. Reference Diagram (Optional — PNG, JPG, SVG)</label>
+            <label for="admin-diagram-input">6A. Upload Diagram / Picture (Optional — Biology Cell, Amoeba, Bird, Physics PNG/JPG)</label>
             <input type="file" id="admin-diagram-input" accept="image/*" onchange="handleAdminDiagramSelect(event)" />
             <div id="admin-diagram-preview-box" class="diagram-preview-strip hidden">
               <img id="admin-diagram-preview-img" src="" alt="Uploaded Diagram Preview" />
               <button type="button" class="btn-danger-sm" onclick="clearAdminDiagramInput()">Remove Diagram</button>
             </div>
+          </div>
+
+          <div class="form-group full-width">
+            <label for="admin-diagram-svg">6B. Or Paste Inline SVG Code (Optional — Geometry, Ray Diagrams, Pie Charts)</label>
+            <textarea id="admin-diagram-svg" rows="3" placeholder="&lt;svg viewBox='0 0 240 160' xmlns='http://www.w3.org/2000/svg'&gt;...&lt;/svg&gt;"></textarea>
           </div>
 
           <div class="form-group">
@@ -705,22 +874,20 @@
         <div class="footer-column">
           <h3>Quick Navigation</h3>
           <ul>
-            <li><a href="#" onclick="switchPortalView('student'); return false;">Exam Lobby</a></li>
-            <li><a href="#" onclick="switchPortalView('dashboard'); return false;">Student Dashboard</a></li>
-            <li><a href="#" onclick="resetToCandidateLobby(); return false;">Start Examination</a></li>
-            <li><a href="#site-footer">Contact &amp; Support</a></li>
+            <li><a href="#" onclick="switchPortalView('student'); return false;">Examination Lobby</a></li>
+            <li><a href="#" onclick="switchPortalView('leaderboard'); return false;">Class Leaderboard</a></li>
+            <li><a href="#" onclick="switchPortalView('tournaments'); return false;">School Tournaments</a></li>
+            <li><a href="#" onclick="switchPortalView('dashboard'); return false;">My Dashboard</a></li>
           </ul>
         </div>
 
         <div class="footer-column">
           <h3>Examination Services</h3>
           <ul>
-            <li><a href="#" onclick="switchPortalView('student'); return false;">JSS 1 &amp; JSS 2 Examinations</a></li>
-            <li><a href="#" onclick="switchPortalView('student'); return false;">JSS 3 Examinations</a></li>
-            <li><a href="#" onclick="switchPortalView('student'); return false;">SSS 1 Examinations</a></li>
-            <li><a href="#" onclick="switchPortalView('student'); return false;">SSS 2 Examinations</a></li>
-            <li><a href="#" onclick="switchPortalView('student'); return false;">SSS 3 Examinations</a></li>
-            <li><a href="#" onclick="switchPortalView('dashboard'); return false;">Performance Analytics</a></li>
+            <li><a href="#" onclick="switchPortalView('student'); return false;">JSS 1 – JSS 3 (Junior WAEC)</a></li>
+            <li><a href="#" onclick="switchPortalView('student'); return false;">SSS 1 – SSS 3 (WAEC / JAMB)</a></li>
+            <li><a href="#" onclick="switchPortalView('tournaments'); return false;">Junior &amp; Senior Cups</a></li>
+            <li><a href="#" onclick="switchPortalView('dashboard'); return false;">Personal Analytics</a></li>
           </ul>
         </div>
 
@@ -760,6 +927,30 @@
     </div>
   </footer>
 
+  <!-- Floating Capsule / Pill Bottom Tab Bar -->
+  <nav class="bottom-tab-bar" id="top-nav-controls" aria-label="Portal Navigation">
+    <button type="button" id="btn-student-view" class="bottom-tab-btn active" onclick="switchPortalView('student')">
+      <span class="bottom-tab-icon">📝</span>
+      <span>Exam</span>
+    </button>
+    <button type="button" id="btn-leaderboard-view" class="bottom-tab-btn" onclick="switchPortalView('leaderboard')">
+      <span class="bottom-tab-icon">🏆</span>
+      <span>Leaderboard</span>
+    </button>
+    <button type="button" id="btn-tournaments-view" class="bottom-tab-btn" onclick="switchPortalView('tournaments')">
+      <span class="bottom-tab-icon">⚔️</span>
+      <span>Tournaments</span>
+    </button>
+    <button type="button" id="btn-dashboard-view" class="bottom-tab-btn" onclick="switchPortalView('dashboard')">
+      <span class="bottom-tab-icon">👤</span>
+      <span>Dashboard</span>
+    </button>
+    <button type="button" id="btn-admin-view" class="bottom-tab-btn hidden" onclick="openAdminGate()">
+      <span class="bottom-tab-icon">🔒</span>
+      <span>Admin</span>
+    </button>
+  </nav>
+
   <!-- Floating JAMB Scientific/Standard Calculator -->
   <div id="floating-calculator" class="calc-widget hidden">
     <div class="calc-header">
@@ -785,7 +976,7 @@
 
       <button type="button" onclick="calcDigit('1')">1</button>
       <button type="button" onclick="calcDigit('2')">2</button>
-      <button type="button" class="calc-op" onclick="calcDigit('3')">3</button>
+      <button type="button" onclick="calcDigit('3')">3</button>
       <button type="button" class="calc-op" onclick="calcSetOp('+')">+</button>
 
       <button type="button" onclick="calcDigit('0')" style="grid-column: span 2;">0</button>
@@ -805,25 +996,48 @@
     </div>
   </div>
 
+  <!-- Interactive Tournament Briefing Modal -->
+  <div id="tournament-briefing-modal" class="diagram-modal hidden" onclick="closeTournamentBriefingModal()">
+    <div class="diagram-modal-card" style="max-width: 600px;" onclick="event.stopPropagation()">
+      <div class="diagram-modal-header">
+        <strong id="briefing-stage-title">🏆 Scholars Super Cup — Match Briefing</strong>
+        <button type="button" class="btn-danger-sm" onclick="closeTournamentBriefingModal()">Close &times;</button>
+      </div>
+      <div style="text-align:left; display:flex; flex-direction:column; gap:12px;">
+        <p id="briefing-student-info" style="font-weight:700; color:var(--navy-primary);"></p>
+        <div class="exam-instructions" style="margin:0;">
+          <h4>How This Round Works (Fair Play &amp; Rules)</h4>
+          <ul id="briefing-stage-rules">
+            <li><strong>Class-Matched Questions:</strong> You will answer questions strictly from your own class syllabus so JSS 1 – SSS 3 compete fairly.</li>
+            <li><strong>Separate Device Rule:</strong> Every participant must compete independently on their own signed-in device.</li>
+            <li><strong>Speed Tie-Breaker:</strong> High accuracy + faster finish earns bonus points to break ties on the World Cup bracket.</li>
+            <li><strong>One Official Attempt:</strong> Each member gets one official submission per stage. Switching tabs triggers integrity warnings.</li>
+          </ul>
+        </div>
+        <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:6px;">
+          <button type="button" class="btn-outline" onclick="closeTournamentBriefingModal()">Cancel</button>
+          <button type="button" id="briefing-confirm-btn" class="btn-primary" onclick="confirmStartTournamentQuiz()">
+            I'm Ready — Start Official Match &rarr;
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script>
     (function () {
       const params = new URLSearchParams(window.location.search);
       const showExaminer = params.get("examiner") === "1";
-
       const adminBtn = document.getElementById("btn-admin-view");
       const adminSection = document.getElementById("view-admin");
 
-      if (adminBtn) {
-        adminBtn.classList.toggle("hidden", !showExaminer);
-      }
-
+      if (adminBtn) adminBtn.classList.toggle("hidden", !showExaminer);
       if (!showExaminer && adminSection && adminSection.classList.contains("active")) {
         adminSection.classList.remove("active");
         document.getElementById("view-lobby")?.classList.add("active");
       }
     })();
   </script>
-  
 
   <script src="/static/script.js"></script>
 </body>
