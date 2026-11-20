@@ -2761,3 +2761,827 @@ textarea:focus {
     transition-duration: 0.01ms !important;
   }
 }
+/* =========================================================
+   UPGRADE: CAPSULE BOTTOM TAB BAR, PERSONAL DASHBOARD,
+   TOURNAMENTS & QUESTION TABLES / CHARTS
+   ========================================================= */
+
+body {
+  padding-bottom: 92px;
+}
+
+.profile-avatar img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Floating Capsule / Pill Bottom Navigation Bar */
+.bottom-tab-bar {
+  position: fixed;
+  left: 50%;
+  bottom: max(14px, env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  z-index: 900;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  max-width: calc(100vw - 24px);
+  background: rgba(23, 37, 84, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+  box-shadow: 0 14px 36px rgba(15, 23, 42, 0.34);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+.bottom-tab-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 42px;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: #dbeafe;
+  font-size: 0.84rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background var(--transition), color var(--transition), transform var(--transition);
+}
+
+.bottom-tab-btn:hover:not(.active) {
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+}
+
+.bottom-tab-btn.active {
+  background: #ffffff;
+  color: var(--navy-primary);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.22);
+}
+
+.bottom-tab-icon {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+/* Personal Student Dashboard Profile Card */
+.personal-profile-hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 18px;
+  padding: 18px 20px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #eff6ff 0%, #ffffff 100%);
+  border: 1.5px solid var(--navy-border);
+  margin-bottom: 22px;
+}
+
+.personal-profile-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.personal-avatar-lg {
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--navy-primary), var(--navy-dark));
+  color: #ffffff;
+  font-size: 1.4rem;
+  font-weight: 800;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  flex-shrink: 0;
+  border: 3px solid #ffffff;
+  box-shadow: 0 6px 16px rgba(29, 78, 216, 0.22);
+}
+
+.personal-avatar-lg img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Tournament Division Cards */
+.tournament-divisions-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  margin-bottom: 22px;
+}
+
+.tournament-card {
+  border-radius: 16px;
+  padding: 20px;
+  border: 1.5px solid var(--navy-border);
+  background: linear-gradient(160deg, #ffffff 0%, #f5f9ff 100%);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.tournament-card.senior {
+  border-color: #fcd34d;
+  background: linear-gradient(160deg, #ffffff 0%, #fffbeb 100%);
+}
+
+.tournament-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  background: var(--navy-soft);
+  color: var(--navy-primary);
+}
+
+.tournament-card.senior .tournament-badge {
+  background: var(--amber-soft);
+  color: #92400e;
+}
+
+/* Structured Tables Inside Exam Questions (Math Frequency / Economics) */
+.question-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  margin: 12px 0;
+  border-radius: 10px;
+  border: 1px solid var(--navy-border);
+}
+
+.question-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+  background: #ffffff;
+}
+
+.question-table th {
+  background: var(--navy-primary);
+  color: #ffffff;
+  padding: 9px 12px;
+  text-align: center;
+  font-weight: 700;
+}
+
+.question-table td {
+  padding: 8px 12px;
+  text-align: center;
+  border-top: 1px solid var(--border-color);
+  border-right: 1px solid var(--border-color);
+}
+
+.question-table tr:nth-child(even) td {
+  background: var(--page-bg);
+}
+
+@media (max-width: 768px) {
+  .tournament-divisions-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .bottom-tab-bar {
+    gap: 4px;
+    padding: 5px 6px;
+  }
+
+  .bottom-tab-btn {
+    padding: 8px 11px;
+    font-size: 0.76rem;
+    flex-direction: column;
+    gap: 2px;
+    min-height: 48px;
+  }
+}
+/* =========================================================
+   WORLD CUP TOURNAMENT BRACKET & INTERACTIVE BRIEFING
+   ========================================================= */
+
+.wc-hero-banner {
+  background: linear-gradient(135deg, #172554 0%, #1d4ed8 60%, #0f172a 100%);
+  color: #ffffff;
+  border-radius: 16px;
+  padding: 22px 24px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  border-bottom: 4px solid var(--amber);
+}
+
+.wc-hero-banner h2 {
+  color: #ffffff;
+  margin: 6px 0 4px;
+  font-size: clamp(1.25rem, 2.2vw, 1.65rem);
+}
+
+.wc-hero-banner p {
+  color: #dbeafe;
+  font-size: 0.9rem;
+  max-width: 620px;
+}
+
+.wc-stepper {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 22px;
+}
+
+.wc-step {
+  background: var(--page-bg);
+  border: 1.5px solid var(--border-color);
+  border-radius: 12px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.wc-step.active {
+  background: var(--navy-soft);
+  border-color: var(--navy-primary);
+  box-shadow: 0 6px 16px rgba(29, 78, 216, 0.12);
+}
+
+.wc-step-num {
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: var(--navy-primary);
+  letter-spacing: 0.5px;
+}
+
+.wc-step strong {
+  font-size: 0.94rem;
+  color: var(--navy-dark);
+}
+
+.wc-step span {
+  font-size: 0.78rem;
+  color: var(--slate-600);
+}
+
+/* World Cup 3-Column Knockout Tree */
+.wc-bracket-board {
+  display: grid;
+  grid-template-columns: 1fr 1.15fr 1fr;
+  gap: 16px;
+  align-items: center;
+  margin: 18px 0 24px;
+}
+
+.wc-wing {
+  background: #f8fbff;
+  border: 1.5px solid var(--navy-border);
+  border-radius: 14px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.wc-wing.senior {
+  background: #fffdf5;
+  border-color: #fcd34d;
+}
+
+.wc-wing-title {
+  font-size: 0.8rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--navy-primary);
+  text-align: center;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.wc-wing.senior .wc-wing-title {
+  color: #92400e;
+}
+
+.wc-slot {
+  background: #ffffff;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.wc-slot.filled {
+  border-left: 4px solid var(--navy-primary);
+}
+
+.wc-wing.senior .wc-slot.filled {
+  border-left-color: var(--amber);
+}
+
+.wc-slot-user {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+}
+
+.wc-mini-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--navy-soft);
+  color: var(--navy-primary);
+  font-size: 0.75rem;
+  font-weight: 800;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.wc-mini-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.wc-slot-name {
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: var(--slate-900);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.wc-slot-class {
+  font-size: 0.72rem;
+  color: var(--slate-600);
+  font-weight: 600;
+}
+
+.wc-slot-score {
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: var(--navy-primary);
+  white-space: nowrap;
+}
+
+/* Center Grand Finale Column */
+.wc-finale-center {
+  background: linear-gradient(180deg, #172554 0%, #1e3a8a 100%);
+  color: #ffffff;
+  border-radius: 16px;
+  padding: 18px 16px;
+  text-align: center;
+  border: 2px solid #fbbf24;
+  box-shadow: 0 12px 28px rgba(23, 37, 84, 0.22);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.wc-vs-row {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 8px;
+}
+
+.wc-finalist-box {
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 10px;
+  padding: 10px 8px;
+}
+
+.wc-finalist-box small {
+  display: block;
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  color: #fde68a;
+  font-weight: 700;
+}
+
+.wc-finalist-box strong {
+  display: block;
+  font-size: 0.86rem;
+  margin-top: 3px;
+  color: #ffffff;
+}
+
+.wc-vs-pill {
+  background: #fbbf24;
+  color: #1e1600;
+  font-weight: 900;
+  font-size: 0.78rem;
+  padding: 5px 9px;
+  border-radius: 999px;
+}
+
+.wc-champion-crown {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  color: #78350f;
+  border-radius: 12px;
+  padding: 12px;
+  font-weight: 800;
+}
+
+.wc-champion-crown span {
+  display: block;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+}
+
+.wc-champion-crown strong {
+  font-size: 1.05rem;
+  color: #172554;
+}
+
+@media (max-width: 960px) {
+  .wc-bracket-board {
+    grid-template-columns: 1fr;
+  }
+
+  .wc-stepper {
+    grid-template-columns: 1fr;
+  }
+}
+/* =========================================================
+   SCHOLARS STANDARD — PREMIUM VISUAL REFINEMENT
+   CSS-only enhancement layer.
+   Original rules, selectors, media queries and functionality
+   are intentionally retained above this section.
+   ========================================================= */
+
+:root {
+  --white: #ffffff;
+  --page-bg: #f3f6fc;
+  --navy-primary: #2457d6;
+  --navy-dark: #14264f;
+  --navy-soft: #edf3ff;
+  --navy-border: #d5e1fa;
+  --amber: #d69a25;
+  --amber-soft: #fff8e9;
+  --emerald: #07966f;
+  --emerald-soft: #e9f8f2;
+  --crimson: #d94352;
+  --crimson-soft: #fff0f1;
+  --slate-900: #172238;
+  --slate-600: #64718a;
+  --border-color: #e5eaf3;
+  --card-shadow: 0 8px 30px rgba(20, 38, 79, 0.055);
+  --card-shadow-hover: 0 18px 42px rgba(20, 38, 79, 0.105);
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --transition: 220ms cubic-bezier(.2, .75, .25, 1);
+}
+
+html { scroll-padding-top: 24px; }
+
+body {
+  background:
+    radial-gradient(ellipse at 8% 0%, rgba(36, 87, 214, .075), transparent 34rem),
+    radial-gradient(ellipse at 100% 18%, rgba(214, 154, 37, .045), transparent 28rem),
+    var(--page-bg);
+  color: var(--slate-900);
+  letter-spacing: .002em;
+}
+
+::selection { background: rgba(36, 87, 214, .18); color: var(--navy-dark); }
+
+.container { width: min(100% - 48px, 1320px); max-width: 1320px; }
+
+.navbar {
+  padding-block: 20px 21px;
+  background: linear-gradient(118deg, #101f43 0%, #183777 48%, #2457d6 100%);
+  border-bottom: 3px solid #d6a43d;
+  box-shadow: 0 12px 34px rgba(16, 31, 67, .18);
+}
+
+.brand-badge {
+  min-width: 50px;
+  min-height: 50px;
+  border-radius: 15px;
+  box-shadow: 0 8px 18px rgba(4, 15, 40, .2);
+}
+
+.brand-text h1 { letter-spacing: -.04em; }
+.brand-text p { color: #d8e5ff; }
+
+.nav-profile-badge {
+  background: rgba(255,255,255,.11);
+  border-color: rgba(255,255,255,.2);
+  backdrop-filter: blur(14px);
+}
+
+.nav-switcher {
+  padding: 6px;
+  gap: 7px;
+  background: rgba(7, 18, 43, .42);
+  border-color: rgba(255,255,255,.13);
+  border-radius: 15px;
+}
+
+.nav-btn { border-radius: 11px; min-height: 44px; }
+.nav-btn.active { box-shadow: 0 5px 15px rgba(5, 17, 42, .2); }
+
+.main-wrapper { padding-top: 32px; }
+
+.card {
+  background: rgba(255,255,255,.96);
+  border: 1px solid rgba(220,228,241,.9);
+  border-radius: 20px;
+  box-shadow: var(--card-shadow);
+  padding: clamp(21px, 2.6vw, 34px);
+  transition: transform var(--transition), box-shadow var(--transition), border-color var(--transition);
+}
+
+.card:hover {
+  border-color: #d5e0f3;
+  box-shadow: var(--card-shadow-hover);
+}
+
+.card-header { padding-bottom: 18px; margin-bottom: 24px; }
+.card-header h2 { color: var(--navy-dark); letter-spacing: -.035em; }
+.card-header p, .muted-small { color: #6b7890; }
+
+.pill-tag, .reg-pill, .topic-badge, .rank-badge { border-radius: 999px; }
+.pill-tag { padding: 5px 12px; }
+
+.form-grid, .form-grid-4, .form-grid-auto { row-gap: 19px; }
+label { color: #263858; font-weight: 700; letter-spacing: .005em; }
+
+input[type="text"], input[type="number"], input[type="email"],
+input[type="tel"], input[type="password"], input[type="search"],
+input[type="date"], input[type="time"], select, textarea {
+  min-height: 49px;
+  padding: 12px 15px;
+  border: 1px solid #d9e1ee;
+  border-radius: 12px;
+  background: #fbfcff;
+  color: #172238;
+  box-shadow: inset 0 1px 2px rgba(20,38,79,.025);
+}
+
+input:hover, select:hover, textarea:hover { border-color: #aebfe0; background: #fff; }
+input:focus, select:focus, textarea:focus {
+  border-color: #4776e6;
+  background: #fff;
+  box-shadow: 0 0 0 4px rgba(36,87,214,.11);
+}
+
+.subject-selection-box {
+  border: 1px solid #d8e4fa;
+  border-radius: 16px;
+  background: linear-gradient(145deg, #f7faff, #eff5ff);
+  padding: 22px;
+}
+
+.subject-card-label {
+  border: 1px solid #e3eaf5;
+  border-radius: 13px;
+  padding: 14px 15px;
+  box-shadow: 0 2px 8px rgba(20,38,79,.025);
+}
+.subject-card-label:hover {
+  border-color: #8eacee;
+  background: #f5f8ff;
+  box-shadow: 0 9px 20px rgba(36,87,214,.08);
+}
+
+.exam-instructions {
+  border-left-width: 4px;
+  border-radius: 0 14px 14px 0;
+  background: linear-gradient(110deg, #eff5ff, #f8faff);
+  padding: 18px 21px;
+}
+
+.btn-primary, .btn-outline, .btn-amber, .btn-danger-sm, .btn-submit-now,
+.topic-pill-btn, .back-to-top {
+  border-radius: 11px;
+  font-weight: 750;
+  letter-spacing: .005em;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #2b63e3, #1d4fc3);
+  box-shadow: 0 7px 16px rgba(36,87,214,.2);
+}
+.btn-primary:hover {
+  background: linear-gradient(135deg, #1f4fc2, #173b99);
+  box-shadow: 0 11px 22px rgba(36,87,214,.23);
+  transform: translateY(-2px);
+}
+.btn-outline { border-width: 1.5px; }
+.btn-outline:hover { background: #edf3ff; box-shadow: 0 6px 14px rgba(36,87,214,.08); }
+.btn-amber { background: #fff8e9; }
+.btn-amber:hover { background: #fff0cf; box-shadow: 0 6px 14px rgba(214,154,37,.12); }
+.btn-danger-sm:hover { background: #ffe5e8; }
+
+.resume-banner {
+  border: 1px solid #efd18d;
+  border-radius: 14px;
+  background: linear-gradient(110deg, #fff9eb, #fffdf7);
+  box-shadow: 0 7px 20px rgba(146,64,14,.045);
+  padding: 16px 20px;
+}
+
+.exam-topbar {
+  border: 1px solid #e1e8f3;
+  border-left: 5px solid var(--navy-primary);
+  border-radius: 17px;
+  padding: 17px 22px;
+  background: linear-gradient(115deg, #fff, #f7faff);
+  box-shadow: 0 6px 20px rgba(20,38,79,.045);
+}
+.timer-display {
+  border-radius: 11px;
+  background: linear-gradient(135deg, #192f61, #101f43);
+  box-shadow: 0 6px 15px rgba(16,31,67,.18);
+}
+.timer-display.urgent { background: linear-gradient(135deg, #e34b58, #bd2639); }
+.btn-submit-now {
+  background: linear-gradient(135deg, #0aa77c, #07825f);
+  box-shadow: 0 6px 15px rgba(7,150,111,.18);
+}
+
+.subject-tab {
+  border-radius: 11px;
+  border-color: #d8e3f7;
+  background: #fff;
+}
+.subject-tab.active { background: linear-gradient(135deg, #2d65e5, #1e4fc2); }
+
+.question-top-meta { border-bottom-color: #e8edf5; }
+.question-prompt-text { color: #1c2b45; line-height: 1.8; }
+.diagram-panel {
+  border: 1px solid #dbe5f7;
+  border-radius: 15px;
+  background: linear-gradient(145deg, #f8fbff, #f0f5ff);
+}
+
+.option-row-btn {
+  border: 1px solid #e2e8f2;
+  border-radius: 14px;
+  padding: 14px 17px;
+  background: #fff;
+  box-shadow: 0 2px 7px rgba(20,38,79,.025);
+  transition: border-color var(--transition), background var(--transition), box-shadow var(--transition), transform var(--transition);
+}
+.option-row-btn:hover {
+  border-color: #9ab4ed;
+  background: #f7f9ff;
+  box-shadow: 0 7px 17px rgba(36,87,214,.07);
+}
+.option-row-btn.selected {
+  border-color: #4776e6;
+  background: linear-gradient(100deg, #edf3ff, #f8faff);
+  box-shadow: inset 0 0 0 1px #4776e6, 0 6px 16px rgba(36,87,214,.08);
+}
+.option-key-box { border-radius: 9px; }
+
+.palette-cell { border-radius: 10px; }
+.palette-cell.active-q { border-radius: 10px; }
+
+.result-presentation-card {
+  border-top: 5px solid #2b63df;
+  border-radius: 20px;
+  background: radial-gradient(ellipse at 50% 0%, rgba(36,87,214,.075), transparent 25rem), #fff;
+}
+.score-dial {
+  border-width: 7px;
+  background: linear-gradient(145deg, #f3f7ff, #e8f0ff);
+}
+.kpi-box, .subject-score-tile, .weak-topic-card { border-radius: 14px; }
+.kpi-box { background: #f7f9fd; border-color: #e5eaf3; }
+.subject-score-tile { background: linear-gradient(145deg, #f4f7ff, #edf3ff); }
+
+.table-responsive, .question-table-wrap { border-radius: 14px; border-color: #e1e8f2; }
+.data-table th, .question-table th { background: linear-gradient(110deg, #1b3675, #2457d6); }
+.data-table th, .data-table td { padding: 14px 16px; }
+.data-table tr:nth-child(even) td, .question-table tr:nth-child(even) td { background: #f7f9fd; }
+.data-table tr:hover td { background: #eff4ff; }
+
+.weak-topic-card { padding: 15px 17px; background: #f8faff; }
+.topic-directory-banner {
+  border-radius: 15px;
+  background: linear-gradient(130deg, #eff5ff, #fbfcff);
+}
+.topic-pill-btn { padding: 8px 14px; }
+.topic-pill-btn:hover, .topic-pill-btn.active { box-shadow: 0 5px 12px rgba(36,87,214,.16); }
+
+.auth-gate-box { border-radius: 15px; background: #f8faff; border-color: #dce5f2; padding: 19px; }
+
+.lb-my-rank {
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 14px;
+  background: linear-gradient(115deg, #10234c, #1b3c7d);
+  box-shadow: 0 8px 20px rgba(16,31,67,.12);
+}
+.podium-card { border-radius: 15px; box-shadow: 0 5px 16px rgba(20,38,79,.045); }
+.podium-card.gold { background: linear-gradient(160deg, #fff9e7, #fff); }
+
+.personal-profile-hero {
+  border-radius: 18px;
+  border-color: #d8e4fa;
+  background: linear-gradient(120deg, #edf4ff, #fff 75%);
+  padding: 22px;
+}
+.personal-avatar-lg { box-shadow: 0 8px 20px rgba(36,87,214,.22); }
+
+.tournament-card {
+  border-radius: 18px;
+  box-shadow: 0 5px 18px rgba(20,38,79,.045);
+  transition: transform var(--transition), box-shadow var(--transition);
+}
+.tournament-card:hover { transform: translateY(-3px); box-shadow: var(--card-shadow-hover); }
+
+.bottom-tab-bar {
+  background: rgba(16, 31, 67, .94);
+  border: 1px solid rgba(255,255,255,.16);
+  box-shadow: 0 16px 42px rgba(9,20,46,.3);
+}
+.bottom-tab-btn { min-height: 44px; }
+.bottom-tab-btn.active { color: #1d4fc2; }
+
+.calc-widget {
+  border: 1px solid #dce5f3;
+  border-radius: 18px;
+  box-shadow: 0 20px 55px rgba(10,25,58,.25);
+}
+.calc-header { background: linear-gradient(110deg, #172f68, #2457d6); padding: 13px 15px; }
+.calc-keypad button { border-radius: 9px; }
+
+.diagram-modal { background: rgba(8,18,40,.78); backdrop-filter: blur(8px); }
+.diagram-modal-card { border-radius: 20px; box-shadow: 0 28px 85px rgba(0,0,0,.3); }
+
+.site-footer {
+  background: linear-gradient(135deg, #0c1936, #142b5c 65%, #1b3d83);
+  border-top-color: #d6a43d;
+}
+.footer-main { padding-top: 70px; }
+.footer-trust { background: rgba(255,255,255,.045); }
+.back-to-top { border-radius: 10px; }
+
+.wc-hero-banner {
+  border-radius: 19px;
+  background: linear-gradient(120deg, #10234c, #2457d6 68%, #14264f);
+  box-shadow: 0 12px 28px rgba(16,31,67,.14);
+}
+.wc-step, .wc-wing { border-radius: 15px; }
+.wc-slot { border-radius: 11px; }
+.wc-finale-center { border-radius: 18px; }
+
+button, a, input, select, textarea { -webkit-tap-highlight-color: transparent; }
+button:disabled { cursor: not-allowed; opacity: .62; transform: none; }
+
+@media (min-width: 769px) {
+  .nav-btn:hover:not(.active), .bottom-tab-btn:hover:not(.active) { transform: translateY(-1px); }
+  .card:hover { transform: translateY(-1px); }
+}
+
+@media (max-width: 768px) {
+  .container { width: min(100% - 28px, 700px); }
+  .main-wrapper { padding-top: 20px; }
+  .card { border-radius: 17px; }
+  .subject-selection-box { padding: 16px; }
+  .exam-topbar { border-radius: 15px; }
+  .personal-profile-hero { padding: 17px; }
+  .bottom-tab-bar { max-width: calc(100vw - 18px); }
+}
+
+@media (max-width: 560px) {
+  .container { width: calc(100% - 22px); }
+  .card { padding: 16px; }
+  .navbar { padding-block: 13px 15px; }
+  .option-row-btn { border-radius: 12px; }
+  .resume-banner { border-radius: 12px; }
+  .wc-hero-banner { padding: 18px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card, .tournament-card, .option-row-btn, .btn-primary, .btn-outline,
+  .btn-amber, .btn-submit-now, .nav-btn, .bottom-tab-btn {
+    transition: none !important;
+  }
+}
