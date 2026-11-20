@@ -86,6 +86,7 @@ def init_db():
             full_name TEXT NOT NULL,
             name_key TEXT NOT NULL,
             pin_hash TEXT NOT NULL,
+            avatar_data TEXT DEFAULT '',
             created_at TEXT NOT NULL,
             UNIQUE(school_key, class_level, name_key)
         )
@@ -128,12 +129,54 @@ def init_db():
         )
     """)
 
-    # Safe schema migrations for existing scholars_cbt.db files
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS tournament_state (
+            id INTEGER PRIMARY KEY CHECK (id = 1),
+            active_stage TEXT NOT NULL DEFAULT 'qualifiers',
+            is_open INTEGER NOT NULL DEFAULT 0,
+            cup_name TEXT NOT NULL DEFAULT 'Scholars Super Cup'
+        )
+    """)
+    cursor.execute("""
+        INSERT OR IGNORE INTO tournament_state (id, active_stage, is_open, cup_name)
+        VALUES (1, 'qualifiers', 0, 'Scholars Super Cup')
+    """)
+
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS tournament_entries (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            student_id INTEGER DEFAULT 0,
+            division TEXT NOT NULL,
+            stage TEXT NOT NULL DEFAULT 'qualifiers',
+            tournament_title TEXT NOT NULL,
+            student_name TEXT NOT NULL,
+            school_name TEXT DEFAULT '',
+            class_level TEXT NOT NULL,
+            subjects_json TEXT NOT NULL,
+            correct INTEGER NOT NULL,
+            total INTEGER NOT NULL,
+            percentage INTEGER NOT NULL,
+            points_earned INTEGER NOT NULL,
+            time_taken_seconds INTEGER DEFAULT 0,
+            speed_bonus INTEGER DEFAULT 0,
+            avatar_data TEXT DEFAULT '',
+            date_label TEXT NOT NULL,
+            created_at TEXT NOT NULL
+        )
+    """)
+
+    ensure_column_exists(cursor, "students", "avatar_data", "TEXT DEFAULT ''")
     ensure_column_exists(cursor, "questions", "exam_source", "TEXT DEFAULT 'WAEC/JAMB/NECO'")
     ensure_column_exists(cursor, "exam_records", "reg_number", "TEXT DEFAULT ''")
     ensure_column_exists(cursor, "exam_records", "tab_warnings", "INTEGER DEFAULT 0")
     ensure_column_exists(cursor, "exam_records", "topic_stats_json", "TEXT DEFAULT '{}'")
     ensure_column_exists(cursor, "exam_records", "question_ids_json", "TEXT DEFAULT '[]'")
+    ensure_column_exists(cursor, "tournament_state", "is_open", "INTEGER NOT NULL DEFAULT 0")
+    ensure_column_exists(cursor, "tournament_entries", "student_id", "INTEGER DEFAULT 0")
+    ensure_column_exists(cursor, "tournament_entries", "stage", "TEXT NOT NULL DEFAULT 'qualifiers'")
+    ensure_column_exists(cursor, "tournament_entries", "time_taken_seconds", "INTEGER DEFAULT 0")
+    ensure_column_exists(cursor, "tournament_entries", "speed_bonus", "INTEGER DEFAULT 0")
+    ensure_column_exists(cursor, "tournament_entries", "avatar_data", "TEXT DEFAULT ''")
     migrate_class_levels(cursor)
 
     cursor.execute("SELECT COUNT(*) AS cnt FROM questions")
@@ -280,6 +323,42 @@ def row_to_record_dict(row):
     }
 
 
+def row_to_tournament_dict(row):
+    try:
+        subjects = json.loads(row["subjects_json"])
+    except Exception:
+        subjects = []
+    return {
+        "id": row["id"],
+        "studentId": row["student_id"] or 0,
+        "division": row["division"],
+        "stage": row["stage"] or "qualifiers",
+        "tournamentTitle": row["tournament_title"],
+        "studentName": row["student_name"],
+        "schoolName": row["school_name"] or "",
+        "classLevel": row["class_level"],
+        "subjects": subjects,
+        "correct": row["correct"],
+        "total": row["total"],
+        "percentage": row["percentage"],
+        "pointsEarned": row["points_earned"],
+        "timeTakenSeconds": row["time_taken_seconds"] or 0,
+        "speedBonus": row["speed_bonus"] or 0,
+        "avatarData": row["avatar_data"] or "",
+        "date": row["date_label"]
+    }
+
+
+def rank_tournament_key(entry):
+    return (
+        entry["pointsEarned"],
+        entry["percentage"],
+        entry["speedBonus"],
+        -entry["timeTakenSeconds"],
+        -entry["id"]
+    )
+
+
 def parse_correct_option(raw_val):
     cleaned = str(raw_val or "").strip().upper()
     mapping = {"A": 0, "B": 1, "C": 2, "D": 3, "0": 0, "1": 1, "2": 2, "3": 3}
@@ -304,6 +383,7 @@ def api_register():
     class_level = normalize_class_level(data.get("class_level", ""), default="")
     full_name = " ".join(str(data.get("full_name", "")).strip().split())
     pin = str(data.get("pin", "")).strip()
+    avatar_data = str(data.get("avatar_data", "")).strip()
 
     if not school_name or not full_name:
         return jsonify({"ok": False, "error": "School name and full name are required."}), 400
@@ -320,9 +400,10 @@ def api_register():
     try:
         cursor = conn.cursor()
         cursor.execute("""
-            INSERT INTO students (school_name, school_key, class_level, full_name, name_key, pin_hash, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-        """, (school_name, school_key, class_level, full_name, name_key, pin_hash, datetime.utcnow().isoformat()))
+            INSERT INTO students (
+                school_name, school_key, class_level, full_name, name_key, pin_hash, avatar_data, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """, (school_name, school_key, class_level, full_name, name_key, pin_hash, avatar_data, datetime.utcnow().isoformat()))
         new_id = cursor.lastrowid
         conn.commit()
     except sqlite3.IntegrityError:
@@ -336,7 +417,8 @@ def api_register():
             "id": new_id,
             "school_name": school_name,
             "class_level": class_level,
-            "full_name": full_name
+            "full_name": full_name,
+            "avatar_data": avatar_data
         }
     }), 201
 
@@ -354,7 +436,7 @@ def api_login():
 
     conn = get_db_connection()
     student = conn.execute("""
-        SELECT id, school_name, class_level, full_name, pin_hash
+        SELECT id, school_name, class_level, full_name, pin_hash, avatar_data
         FROM students
         WHERE school_key = ? AND class_level = ? AND name_key = ?
     """, (school_key, class_level, name_key)).fetchone()
@@ -372,9 +454,26 @@ def api_login():
             "id": student["id"],
             "school_name": student["school_name"],
             "class_level": student["class_level"],
-            "full_name": student["full_name"]
+            "full_name": student["full_name"],
+            "avatar_data": student["avatar_data"] or ""
         }
     }), 200
+
+
+@app.route("/api/student/avatar", methods=["POST"])
+def api_update_student_avatar():
+    data = request.get_json(silent=True) or {}
+    student_id = data.get("student_id")
+    avatar_data = str(data.get("avatar_data", "")).strip()
+    if not student_id:
+        return jsonify({"ok": False, "error": "Student ID required."}), 400
+
+    conn = get_db_connection()
+    conn.execute("UPDATE students SET avatar_data = ? WHERE id = ?", (avatar_data, int(student_id)))
+    conn.execute("UPDATE tournament_entries SET avatar_data = ? WHERE student_id = ?", (avatar_data, int(student_id)))
+    conn.commit()
+    conn.close()
+    return jsonify({"ok": True, "avatar_data": avatar_data})
 
 
 @app.route("/api/logout", methods=["POST"])
@@ -424,8 +523,8 @@ def api_add_question():
         str(data.get("topic", "General Topic")).strip(),
         str(data.get("examSource", "WAEC/JAMB/NECO")).strip() or "WAEC/JAMB/NECO",
         str(data.get("prompt", "")).strip(),
-        data.get("diagramSVG"),
-        data.get("diagramImage"),
+        data.get("diagramSVG") or None,
+        data.get("diagramImage") or None,
         json.dumps([str(o).strip() for o in options[:4]]),
         int(data.get("correctIndex", 0)),
         str(data.get("explanation", "")).strip(),
@@ -479,6 +578,7 @@ def api_bulk_csv_questions():
         class_level = normalize_class_level(get_col(row_dict, "class_level", "JSS 3"), default="JSS 3")
         topic = get_col(row_dict, "topic", "General Syllabus Topic") or "General Syllabus Topic"
         exam_source = get_col(row_dict, "exam_source", "WAEC/JAMB/NECO") or "WAEC/JAMB/NECO"
+        diagram_svg = get_col(row_dict, "diagram_svg", "") or None
         opts = [
             get_col(row_dict, "option_a"),
             get_col(row_dict, "option_b"),
@@ -502,7 +602,7 @@ def api_bulk_csv_questions():
             topic,
             exam_source,
             prompt,
-            None,
+            diagram_svg,
             None,
             json.dumps(opts),
             correct_idx,
@@ -656,6 +756,193 @@ def api_clear_records():
     conn.commit()
     conn.close()
     return jsonify({"status": "cleared"})
+
+
+@app.route("/api/tournaments", methods=["GET"])
+def api_get_tournaments():
+    conn = get_db_connection()
+    rows = conn.execute(
+        "SELECT * FROM tournament_entries ORDER BY points_earned DESC, percentage DESC, speed_bonus DESC, id ASC"
+    ).fetchall()
+    conn.close()
+    return jsonify([row_to_tournament_dict(r) for r in rows])
+
+
+@app.route("/api/tournaments/bracket", methods=["GET"])
+def api_get_tournament_bracket():
+    conn = get_db_connection()
+    state_row = conn.execute("SELECT active_stage, is_open, cup_name FROM tournament_state WHERE id = 1").fetchone()
+    rows = conn.execute("SELECT * FROM tournament_entries ORDER BY id ASC").fetchall()
+    conn.close()
+
+    active_stage = state_row["active_stage"] if state_row else "qualifiers"
+    is_open = bool(state_row["is_open"]) if state_row else False
+    cup_name = state_row["cup_name"] if state_row else "Scholars Super Cup"
+    entries = [row_to_tournament_dict(r) for r in rows]
+
+    # Stage 1: Best qualifier per class becomes Class Representative
+    class_list = ["JSS 1", "JSS 2", "JSS 3", "SSS 1", "SSS 2", "SSS 3"]
+    reps = {}
+    for cls in class_list:
+        cls_entries = [e for e in entries if e["stage"] == "qualifiers" and e["classLevel"] == cls]
+        reps[cls] = max(cls_entries, key=rank_tournament_key) if cls_entries else None
+
+    # Stage 2: Division Playoffs (Junior Wing vs Senior Wing)
+    jss_playoffs = sorted(
+        [e for e in entries if e["stage"] == "playoffs" and e["division"] == "JSS"],
+        key=rank_tournament_key,
+        reverse=True
+    )
+    sss_playoffs = sorted(
+        [e for e in entries if e["stage"] == "playoffs" and e["division"] == "SSS"],
+        key=rank_tournament_key,
+        reverse=True
+    )
+    junior_champion = jss_playoffs[0] if jss_playoffs else None
+    senior_champion = sss_playoffs[0] if sss_playoffs else None
+
+    # Stage 3: Grand Finale (Junior Champion vs Senior Champion)
+    finale_entries = sorted(
+        [e for e in entries if e["stage"] == "finale"],
+        key=rank_tournament_key,
+        reverse=True
+    )
+    overall_champion = finale_entries[0] if finale_entries else None
+
+    return jsonify({
+        "isOpen": is_open,
+        "activeStage": active_stage,
+        "cupName": cup_name,
+        "reps": reps,
+        "playoffs": {
+            "JSS": jss_playoffs,
+            "SSS": sss_playoffs
+        },
+        "juniorChampion": junior_champion,
+        "seniorChampion": senior_champion,
+        "finale": finale_entries,
+        "overallChampion": overall_champion,
+        "entries": sorted(entries, key=rank_tournament_key, reverse=True)
+    })
+
+
+@app.route("/api/tournaments/control", methods=["POST"])
+@examiner_required
+def api_control_tournament():
+    data = request.get_json(silent=True) or {}
+    conn = get_db_connection()
+    current = conn.execute("SELECT active_stage, is_open, cup_name FROM tournament_state WHERE id = 1").fetchone()
+
+    new_stage = str(data.get("stage", current["active_stage"] if current else "qualifiers")).strip().lower()
+    if new_stage not in {"qualifiers", "playoffs", "finale"}:
+        conn.close()
+        return jsonify({"error": "Invalid stage. Choose qualifiers, playoffs, or finale."}), 400
+
+    is_open = int(bool(data.get("isOpen", bool(current["is_open"]) if current else False)))
+    cup_name = str(data.get("cupName", current["cup_name"] if current else "Scholars Super Cup")).strip() or "Scholars Super Cup"
+
+    conn.execute(
+        "UPDATE tournament_state SET active_stage = ?, is_open = ?, cup_name = ? WHERE id = 1",
+        (new_stage, is_open, cup_name)
+    )
+    conn.commit()
+    conn.close()
+    return jsonify({"ok": True, "activeStage": new_stage, "isOpen": bool(is_open), "cupName": cup_name})
+
+
+@app.route("/api/tournaments", methods=["POST"])
+def api_save_tournament_entry():
+    data = request.get_json(silent=True) or {}
+    conn = get_db_connection()
+    state_row = conn.execute("SELECT active_stage, is_open, cup_name FROM tournament_state WHERE id = 1").fetchone()
+
+    if not state_row or not state_row["is_open"]:
+        conn.close()
+        return jsonify({"error": "Tournament round is currently closed. Wait for the Examiner to open it."}), 403
+
+    active_stage = state_row["active_stage"]
+    student_id = int(data.get("studentId") or 0)
+    student = None
+    if student_id:
+        student = conn.execute(
+            "SELECT id, full_name, school_name, class_level, avatar_data FROM students WHERE id = ?",
+            (student_id,)
+        ).fetchone()
+    else:
+        name_key = normalize_key(data.get("studentName", ""))
+        class_level = normalize_class_level(data.get("classLevel", ""), default="")
+        if name_key and class_level:
+            student = conn.execute(
+                "SELECT id, full_name, school_name, class_level, avatar_data FROM students WHERE name_key = ? AND class_level = ?",
+                (name_key, class_level)
+            ).fetchone()
+
+    if not student:
+        conn.close()
+        return jsonify({"error": "Only registered platform members can participate in the tournament."}), 403
+
+    existing = conn.execute(
+        "SELECT id FROM tournament_entries WHERE student_id = ? AND stage = ?",
+        (student["id"], active_stage)
+    ).fetchone()
+    if existing:
+        conn.close()
+        return jsonify({"error": f"You have already completed the {active_stage} round."}), 400
+
+    class_level = student["class_level"]
+    division = "SSS" if class_level.startswith("SSS") else "JSS"
+    tournament_title = state_row["cup_name"] or "Scholars Super Cup"
+    subjects = data.get("subjects") or []
+    correct = int(data.get("correct", 0))
+    total = int(data.get("total", 0))
+    percentage = int(data.get("percentage", 0))
+    points_earned = int(data.get("pointsEarned", 0))
+    time_taken_seconds = max(0, int(data.get("timeTakenSeconds", 0)))
+    speed_bonus = max(0, int(data.get("speedBonus", 0)))
+    date_label = datetime.now().strftime("%d %b %Y")
+
+    cursor = conn.cursor()
+    cursor.execute("""
+        INSERT INTO tournament_entries (
+            student_id, division, stage, tournament_title, student_name, school_name, class_level,
+            subjects_json, correct, total, percentage, points_earned,
+            time_taken_seconds, speed_bonus, avatar_data, date_label, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """, (
+        student["id"],
+        division,
+        active_stage,
+        tournament_title,
+        student["full_name"],
+        student["school_name"],
+        class_level,
+        json.dumps(subjects),
+        correct,
+        total,
+        percentage,
+        points_earned,
+        time_taken_seconds,
+        speed_bonus,
+        student["avatar_data"] or "",
+        date_label,
+        datetime.utcnow().isoformat()
+    ))
+    new_id = cursor.lastrowid
+    conn.commit()
+    row = conn.execute("SELECT * FROM tournament_entries WHERE id = ?", (new_id,)).fetchone()
+    conn.close()
+    return jsonify(row_to_tournament_dict(row)), 201
+
+
+@app.route("/api/tournaments", methods=["DELETE"])
+@examiner_required
+def api_clear_tournaments():
+    conn = get_db_connection()
+    conn.execute("DELETE FROM tournament_entries")
+    conn.execute("UPDATE tournament_state SET active_stage = 'qualifiers', is_open = 0 WHERE id = 1")
+    conn.commit()
+    conn.close()
+    return jsonify({"status": "cleared", "activeStage": "qualifiers", "isOpen": False})
 
 
 if __name__ == "__main__":
