@@ -748,6 +748,59 @@ def api_save_record():
     return jsonify(row_to_record_dict(row)), 201
 
 
+@app.route("/api/records/sync", methods=["POST"])
+def api_sync_local_records():
+    items = request.get_json(silent=True)
+    if not isinstance(items, list):
+        return jsonify({"synced": 0}), 200
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    synced = 0
+
+    for data in items:
+        candidate_name = str(data.get("candidateName", "")).strip()
+        if not candidate_name:
+            continue
+        class_level = normalize_class_level(data.get("classLevel", "JSS 3"), default="JSS 3")
+        reg_number = str(data.get("regNumber", "")).strip()
+        subjects = data.get("subjects") or []
+        correct = int(data.get("correct", 0))
+        total = int(data.get("total", 0))
+        percentage = int(data.get("percentage", 0))
+        points_earned = int(data.get("pointsEarned", 0))
+        streak = int(data.get("streak", 0))
+        tab_warnings = int(data.get("tabWarnings", 0))
+        topic_stats = data.get("topicStats") or {}
+        question_ids = data.get("questionIds") or []
+        date_label = str(data.get("date", "")).strip() or datetime.now().strftime("%d %b %Y")
+        subjects_json = json.dumps(subjects)
+
+        exists = cursor.execute("""
+            SELECT id FROM exam_records
+            WHERE LOWER(candidate_name) = LOWER(?) AND class_level = ?
+              AND subjects_json = ? AND correct = ? AND total = ? AND date_label = ?
+        """, (candidate_name, class_level, subjects_json, correct, total, date_label)).fetchone()
+
+        if not exists:
+            cursor.execute("""
+                INSERT INTO exam_records (
+                    reg_number, candidate_name, class_level, subjects_json, correct, total,
+                    percentage, points_earned, streak, tab_warnings, topic_stats_json,
+                    question_ids_json, date_label, created_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                reg_number, candidate_name, class_level, subjects_json, correct, total,
+                percentage, points_earned, streak, tab_warnings, json.dumps(topic_stats),
+                json.dumps(question_ids), date_label, datetime.utcnow().isoformat()
+            ))
+            synced += 1
+
+    conn.commit()
+    conn.close()
+    return jsonify({"synced": synced}), 200
+
+
 @app.route("/api/records", methods=["DELETE"])
 @examiner_required
 def api_clear_records():
