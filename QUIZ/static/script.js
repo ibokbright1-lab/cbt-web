@@ -669,7 +669,31 @@ function computeDailyStreakForCandidate(recordsList) {
 /**
  * 2. SERVER SYNC & INITIALIZATION
  */
+function safeSetStorage(key, value) {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch (e) {
+    console.warn("Storage quota skipped for", key);
+  }
+}
+
 async function syncFromServer() {
+  // 1. Free up the 5MB browser quota immediately (Flask DB holds the master bank)
+  try { localStorage.removeItem(BANK_STORAGE_KEY); } catch (e) {}
+
+  // 2. Silently rescue any trapped local exam records on this device
+  try {
+    const localRecs = JSON.parse(localStorage.getItem(RECORDS_STORAGE_KEY) || "[]");
+    if (Array.isArray(localRecs) && localRecs.length > 0) {
+      await fetch("/api/records/sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(localRecs)
+      });
+    }
+  } catch (e) {}
+
+  // 3. Fetch fresh live data from PythonAnywhere Flask DB
   try {
     const [qRes, rRes, bRes] = await Promise.all([
       fetch("/api/questions"),
@@ -678,21 +702,19 @@ async function syncFromServer() {
     ]);
     if (qRes.ok) {
       questionBank = await qRes.json();
-      localStorage.setItem(BANK_STORAGE_KEY, JSON.stringify(questionBank));
     }
     if (rRes.ok) {
       examRecords = await rRes.json();
-      localStorage.setItem(RECORDS_STORAGE_KEY, JSON.stringify(examRecords));
+      safeSetStorage(RECORDS_STORAGE_KEY, examRecords);
     }
     if (bRes.ok) {
       tournamentBracketData = await bRes.json();
       tournamentEntries = tournamentBracketData.entries || [];
-      localStorage.setItem(TOURNAMENTS_STORAGE_KEY, JSON.stringify(tournamentEntries));
+      safeSetStorage(TOURNAMENTS_STORAGE_KEY, tournamentEntries);
     }
     return;
   } catch (err) {}
 
-  questionBank = JSON.parse(localStorage.getItem(BANK_STORAGE_KEY) || "[]");
   examRecords = JSON.parse(localStorage.getItem(RECORDS_STORAGE_KEY) || "[]");
   tournamentEntries = JSON.parse(localStorage.getItem(TOURNAMENTS_STORAGE_KEY) || "[]");
 }
@@ -1890,7 +1912,7 @@ async function computeAndSaveResults() {
       savedRecord = await res.json();
       if (!savedRecord.isoDate) savedRecord.isoDate = isoDate;
       examRecords.push(savedRecord);
-      localStorage.setItem(RECORDS_STORAGE_KEY, JSON.stringify(examRecords));
+      safeSetStorage(RECORDS_STORAGE_KEY, examRecords);
     }
   } catch (err) {}
 
@@ -1912,7 +1934,7 @@ async function computeAndSaveResults() {
       date: new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })
     };
     examRecords.push(savedRecord);
-    localStorage.setItem(RECORDS_STORAGE_KEY, JSON.stringify(examRecords));
+    safeSetStorage(RECORDS_STORAGE_KEY, examRecords);
   }
 
   if (session.isTournament && activeStudentProfile) {
@@ -2361,7 +2383,6 @@ async function sendCSVFormData(formData, onSuccessClear) {
     }
 
     questionBank = data.questions || questionBank;
-    localStorage.setItem(BANK_STORAGE_KEY, JSON.stringify(questionBank));
     if (onSuccessClear) onSuccessClear();
     syncAdminTopicDropdown();
     renderAdminRepository();
@@ -2413,7 +2434,7 @@ async function clearAllSavedRecords() {
     await fetch("/api/records", { method: "DELETE" });
   } catch (err) {}
   examRecords = [];
-  localStorage.setItem(RECORDS_STORAGE_KEY, JSON.stringify(examRecords));
+  safeSetStorage(RECORDS_STORAGE_KEY, examRecords);
   localStorage.removeItem(SEEN_HISTORY_KEY);
   renderStudentDashboard();
   renderClassLeaderboard();
@@ -2660,7 +2681,6 @@ async function handleAdminQuestionSave(event) {
   } catch (err) {
     questionBank.push({ id: Date.now(), ...payload });
   }
-  localStorage.setItem(BANK_STORAGE_KEY, JSON.stringify(questionBank));
 
   ["admin-question-prompt", "admin-diagram-svg", "admin-opt-a", "admin-opt-b", "admin-opt-c", "admin-opt-d", "admin-explanation-input", "admin-custom-topic"].forEach(id => {
     const el = document.getElementById(id);
@@ -2730,7 +2750,6 @@ async function removeQuestionFromBank(id) {
     await fetch(`/api/questions/${id}`, { method: "DELETE" });
   } catch (err) {}
   questionBank = questionBank.filter(q => q.id !== id);
-  localStorage.setItem(BANK_STORAGE_KEY, JSON.stringify(questionBank));
   syncAdminTopicDropdown();
   renderAdminRepository();
   renderAdminMonitor();
@@ -2763,7 +2782,6 @@ function restoreQuestionBankBackup(event) {
         });
         if (res.ok) {
           questionBank = await res.json();
-          localStorage.setItem(BANK_STORAGE_KEY, JSON.stringify(questionBank));
           syncAdminTopicDropdown();
           renderAdminRepository();
           renderAdminMonitor();
