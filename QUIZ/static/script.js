@@ -405,7 +405,6 @@ let autoSaveIntervalId = null;
 let authMode = "login";
 let activeStudentProfile = JSON.parse(localStorage.getItem(ACTIVE_PROFILE_KEY) || "null");
 
-// Active Exam Session State
 let session = {
   candidateName: "",
   regNumber: "",
@@ -427,13 +426,22 @@ let session = {
   tournamentTitle: ""
 };
 
-// Calculator State
 let calcState = {
   current: "0",
   previous: null,
   operator: null,
   resetNext: false
 };
+
+function normalizePersonName(name) {
+  return String(name || "").trim().replace(/\s+/g, " ").toLowerCase();
+}
+
+function normalizeClassCode(cls) {
+  const cleaned = String(cls || "").trim().toUpperCase().replace(/\s+/g, " ");
+  const aliases = { "SS 1": "SSS 1", "SS 2": "SSS 2", "SS 3": "SSS 3" };
+  return aliases[cleaned] || cleaned;
+}
 
 function getInitials(fullName) {
   const words = String(fullName || "").trim().split(/\s+/).filter(Boolean);
@@ -446,9 +454,6 @@ function isExaminerUnlocked() {
   return params.get("examiner") === "1" && Boolean(document.getElementById("view-admin"));
 }
 
-/**
- * Safe HTML Prompt Renderer (Allows Tables for Math Frequency & Economics Schedules)
- */
 function renderFormattedPrompt(rawPrompt) {
   const text = String(rawPrompt || "");
   if (!text.includes("<")) {
@@ -472,9 +477,6 @@ function renderAvatarContent(el, student) {
   }
 }
 
-/**
- * 1B. MANUAL STUDENT PROFILE AUTH, PHOTO UPLOAD & DAILY STREAK ENGINE
- */
 function setAuthMode(mode) {
   authMode = mode;
   const loginBtn = document.getElementById("tab-auth-login");
@@ -493,7 +495,7 @@ function setAuthMode(mode) {
 async function handleStudentAuth(event) {
   event.preventDefault();
   const school_name = (document.getElementById("auth-school")?.value || "").trim();
-  const class_level = document.getElementById("auth-class")?.value || "JSS 3";
+  const class_level = normalizeClassCode(document.getElementById("auth-class")?.value || "JSS 3");
   const full_name = (document.getElementById("auth-fullname")?.value || "").trim();
   const pin = (document.getElementById("auth-pin")?.value || "").trim();
   const feedback = document.getElementById("auth-feedback");
@@ -534,17 +536,21 @@ async function handleStudentAuth(event) {
 
 function applySignedInProfile(student) {
   if (!student) return;
-  activeStudentProfile = student;
-  localStorage.setItem(ACTIVE_PROFILE_KEY, JSON.stringify(student));
+  const normalizedStudent = {
+    ...student,
+    class_level: normalizeClassCode(student.class_level)
+  };
+  activeStudentProfile = normalizedStudent;
+  localStorage.setItem(ACTIVE_PROFILE_KEY, JSON.stringify(normalizedStudent));
 
   const nameInput = document.getElementById("candidate-name");
   const classSelect = document.getElementById("candidate-class");
   if (nameInput) {
-    nameInput.value = student.full_name;
+    nameInput.value = normalizedStudent.full_name;
     nameInput.readOnly = true;
   }
   if (classSelect) {
-    classSelect.value = student.class_level;
+    classSelect.value = normalizedStudent.class_level;
     classSelect.disabled = true;
     renderCandidateSubjects();
   }
@@ -556,13 +562,13 @@ function applySignedInProfile(student) {
   const badgeText = document.getElementById("nav-profile-text");
   const badgeAvatar = document.getElementById("nav-profile-avatar");
   if (badge && badgeText) {
-    badgeText.textContent = `${student.full_name} • ${student.class_level}`;
-    renderAvatarContent(badgeAvatar, student);
+    badgeText.textContent = `${normalizedStudent.full_name} • ${normalizedStudent.class_level}`;
+    renderAvatarContent(badgeAvatar, normalizedStudent);
     badge.classList.remove("hidden");
   }
 
   const lbClass = document.getElementById("leaderboard-class-filter");
-  if (lbClass) lbClass.value = student.class_level;
+  if (lbClass) lbClass.value = normalizedStudent.class_level;
   renderStudentDashboard();
   renderClassLeaderboard();
   renderWorldCupBracket();
@@ -606,7 +612,6 @@ function handleProfilePhotoUpload(event) {
           })
         });
         await syncRecordsAndBracketFromServer();
-        renderWorldCupBracket();
       } catch (err) {}
     };
     img.src = e.target.result;
@@ -670,7 +675,7 @@ function computeDailyStreakForCandidate(recordsList) {
 }
 
 /**
- * 2. SERVER-FIRST SYNC (ZERO BROWSER STORAGE FOR RECORDS OR BANK)
+ * 2. SERVER-FIRST SYNC (ALWAYS PULLS LIVE RECORDS & PAINTS UI)
  */
 async function rescueAndPurgeBrowserStorage() {
   try { localStorage.removeItem(BANK_STORAGE_KEY); } catch (e) {}
@@ -700,26 +705,40 @@ async function rescueAndPurgeBrowserStorage() {
 async function syncRecordsAndBracketFromServer() {
   await rescueAndPurgeBrowserStorage();
   try {
-    const [cRes, rRes, bRes] = await Promise.all([
-      fetch("/api/questions/counts", { cache: "no-store" }),
+    const [rRes, bRes, cRes] = await Promise.all([
       fetch("/api/records", { cache: "no-store" }),
-      fetch("/api/tournaments/bracket", { cache: "no-store" })
+      fetch("/api/tournaments/bracket", { cache: "no-store" }),
+      fetch("/api/questions/counts", { cache: "no-store" })
     ]);
+
+    if (rRes.ok) {
+      const serverRecords = await rRes.json();
+      if (Array.isArray(serverRecords)) {
+        examRecords = serverRecords;
+      }
+    }
+
+    if (bRes.ok) {
+      const serverBracket = await bRes.json();
+      if (serverBracket && typeof serverBracket === "object") {
+        tournamentBracketData = serverBracket;
+        tournamentEntries = serverBracket.entries || [];
+      }
+    }
+
     if (cRes.ok) {
       const cData = await cRes.json();
       totalServerQuestionCount = Number(cData.total || 0);
       questionCountsBySubject = cData.bySubject || {};
     }
-    if (rRes.ok) {
-      examRecords = await rRes.json();
-    }
-    if (bRes.ok) {
-      tournamentBracketData = await bRes.json();
-      tournamentEntries = tournamentBracketData.entries || [];
-    }
   } catch (err) {
     console.error("Server sync error:", err);
   }
+
+  renderStudentDashboard();
+  renderClassLeaderboard();
+  renderWorldCupBracket();
+  renderTournamentStandings();
 }
 
 async function fetchQuestionsForSubjects(classLevel, subjectsList) {
@@ -753,7 +772,7 @@ function getCandidateIdentityKey(name, regNumber, classLevel) {
   if (regNumber && regNumber.trim()) {
     return `reg__${regNumber.trim().toLowerCase()}`;
   }
-  return `name__${(name || "").trim().toLowerCase()}__${classLevel}`;
+  return `name__${normalizePersonName(name)}__${normalizeClassCode(classLevel)}`;
 }
 
 function getSeenQuestionIdSet(candidateName, regNumber, classLevel) {
@@ -854,7 +873,7 @@ function resumeSavedSession() {
     session = {
       candidateName: saved.candidateName,
       regNumber: saved.regNumber || "",
-      classLevel: saved.classLevel,
+      classLevel: normalizeClassCode(saved.classLevel),
       subjects: saved.subjects,
       questionsPerSubject: saved.questionsPerSubject || 15,
       questionsBySubject: saved.questionsBySubject,
@@ -885,14 +904,11 @@ window.addEventListener("DOMContentLoaded", async () => {
   const footerYear = document.getElementById("footer-year");
   if (footerYear) footerYear.textContent = new Date().getFullYear();
 
-  await syncRecordsAndBracketFromServer();
   if (activeStudentProfile) applySignedInProfile(activeStudentProfile);
   renderCandidateSubjects();
-  renderStudentDashboard();
-  renderClassLeaderboard();
-  renderWorldCupBracket();
-  renderTournamentStandings();
   checkResumeBanner();
+  await syncRecordsAndBracketFromServer();
+  if (activeStudentProfile) applySignedInProfile(activeStudentProfile);
 
   if (window.location.hash === "#admin" && isExaminerUnlocked()) {
     openAdminGate();
@@ -1069,7 +1085,7 @@ function renderCandidateSubjects() {
   const grid = document.getElementById("candidate-subject-grid");
   if (!classEl || !grid) return;
 
-  const classLevel = classEl.value;
+  const classLevel = normalizeClassCode(classEl.value);
   const subjectsMap = SYLLABUS_DIRECTORY[classLevel] || {};
   const subjectNames = Object.keys(subjectsMap);
 
@@ -1079,7 +1095,7 @@ function renderCandidateSubjects() {
     const countKey = `${classLevel}__${subject}`;
     const uploadedCount = questionCountsBySubject[countKey] !== undefined
       ? questionCountsBySubject[countKey]
-      : questionBank.filter(q => q.classLevel === classLevel && q.subject === subject).length;
+      : questionBank.filter(q => normalizeClassCode(q.classLevel) === classLevel && q.subject === subject).length;
 
     const label = document.createElement("label");
     label.className = "subject-card-label";
@@ -1132,8 +1148,9 @@ function shuffleQuestionOptions(questionObj) {
  * 4. SMART RESHUFFLE ENGINE (Prioritizes Unseen WAEC/JAMB/NECO Questions)
  */
 function buildSmartShuffledPool(sourceQuestions, classLevel, subject, desiredCount, seenIdSet) {
+  const normClass = normalizeClassCode(classLevel);
   const allSubjectQuestions = (sourceQuestions || []).filter(
-    q => q.classLevel === classLevel && q.subject === subject
+    q => normalizeClassCode(q.classLevel) === normClass && q.subject === subject
   );
 
   const unseen = shuffleList(allSubjectQuestions.filter(q => !seenIdSet.has(String(q.id))));
@@ -1141,17 +1158,17 @@ function buildSmartShuffledPool(sourceQuestions, classLevel, subject, desiredCou
 
   const prioritized = [...unseen, ...seen].slice(0, desiredCount).map(q => shuffleQuestionOptions(q));
 
-  const topics = (SYLLABUS_DIRECTORY[classLevel] && SYLLABUS_DIRECTORY[classLevel][subject]) || ["General Topic"];
+  const topics = (SYLLABUS_DIRECTORY[normClass] && SYLLABUS_DIRECTORY[normClass][subject]) || ["General Topic"];
   while (prioritized.length < desiredCount) {
     const slotNum = prioritized.length + 1;
     const topicName = topics[(slotNum - 1) % topics.length];
     prioritized.push({
-      id: `slot_${classLevel}_${subject}_${slotNum}`,
-      classLevel,
+      id: `slot_${normClass}_${subject}_${slotNum}`,
+      classLevel: normClass,
       subject,
       topic: topicName,
       examSource: "Slot Pending Upload",
-      prompt: `[${subject} — Slot #${slotNum} (${topicName})] Upload WAEC/JAMB/NECO past questions for ${classLevel} ${subject} in Examiner Admin to replace this slot.`,
+      prompt: `[${subject} — Slot #${slotNum} (${topicName})] Upload WAEC/JAMB/NECO past questions for ${normClass} ${subject} in Examiner Admin to replace this slot.`,
       diagramSVG: null,
       diagramImage: null,
       options: [
@@ -1161,7 +1178,7 @@ function buildSmartShuffledPool(sourceQuestions, classLevel, subject, desiredCou
         `${subject} Option D`
       ],
       correctIndex: 0,
-      explanation: `Strictly in ${subject} (${classLevel}) under topic: ${topicName}.`
+      explanation: `Strictly in ${subject} (${normClass}) under topic: ${topicName}.`
     });
   }
 
@@ -1172,7 +1189,7 @@ async function startOfficialExam(event) {
   event.preventDefault();
   const candidateName = (document.getElementById("candidate-name")?.value || "").trim();
   const regNumber = (document.getElementById("candidate-reg-no")?.value || "").trim();
-  const classLevel = document.getElementById("candidate-class")?.value || "JSS 3";
+  const classLevel = normalizeClassCode(document.getElementById("candidate-class")?.value || "JSS 3");
   const durationMins = getSelectedDurationMinutes();
   const questionsPerSubject = getSelectedQuestionsPerSubject();
   const checkedBoxes = Array.from(document.querySelectorAll('input[name="candidate-sub"]:checked'));
@@ -1390,7 +1407,7 @@ function checkStudentTournamentEligibility() {
 
   const stage = data.activeStage || "qualifiers";
   const myId = activeStudentProfile.id;
-  const myClass = activeStudentProfile.class_level;
+  const myClass = normalizeClassCode(activeStudentProfile.class_level);
 
   const alreadyPlayed = (data.entries || []).some(
     e => Number(e.studentId) === Number(myId) && e.stage === stage
@@ -1450,7 +1467,7 @@ async function confirmStartTournamentQuiz() {
     return;
   }
 
-  const studentClass = activeStudentProfile.class_level || "JSS 3";
+  const studentClass = normalizeClassCode(activeStudentProfile.class_level || "JSS 3");
   const division = studentClass.startsWith("SSS") ? "SSS" : "JSS";
   const availableSubjects = Object.keys(SYLLABUS_DIRECTORY[studentClass] || {});
   const selectedSubjects = availableSubjects.slice(0, 3);
@@ -1576,7 +1593,6 @@ async function updateTournamentControl(isOpen) {
     }
     await syncRecordsAndBracketFromServer();
     syncAdminTournamentControls();
-    renderWorldCupBracket();
     alert(isOpen
       ? `Tournament OPENED for ${STAGE_LABELS[stage]}!`
       : "Tournament round has been PAUSED / CLOSED.");
@@ -1595,8 +1611,6 @@ async function resetTournamentCup() {
     }
     await syncRecordsAndBracketFromServer();
     syncAdminTournamentControls();
-    renderWorldCupBracket();
-    renderTournamentStandings();
     alert("Tournament cup has been reset to Stage 1 (Closed).");
   } catch (err) {
     alert("Could not reach server to reset tournament.");
@@ -1966,7 +1980,7 @@ async function computeAndSaveResults() {
   const payload = {
     regNumber: session.regNumber,
     candidateName: session.candidateName,
-    classLevel: session.classLevel,
+    classLevel: normalizeClassCode(session.classLevel),
     subjects: session.subjects,
     correct: totalCorrect,
     total: totalQuestions,
@@ -2008,7 +2022,7 @@ async function computeAndSaveResults() {
         body: JSON.stringify({
           studentId: activeStudentProfile.id,
           studentName: activeStudentProfile.full_name,
-          classLevel: activeStudentProfile.class_level,
+          classLevel: normalizeClassCode(activeStudentProfile.class_level),
           subjects: session.subjects,
           correct: totalCorrect,
           total: totalQuestions,
@@ -2022,14 +2036,10 @@ async function computeAndSaveResults() {
   }
 
   await syncRecordsAndBracketFromServer();
-  renderWorldCupBracket();
-  renderTournamentStandings();
-  renderClassLeaderboard();
-  renderStudentDashboard();
 
   const candidateHistory = examRecords.filter(
-    r => (r.candidateName || "").trim().toLowerCase() === session.candidateName.trim().toLowerCase() &&
-      r.classLevel === session.classLevel
+    r => normalizePersonName(r.candidateName) === normalizePersonName(session.candidateName) &&
+      normalizeClassCode(r.classLevel) === normalizeClassCode(session.classLevel)
   );
   const liveStreak = computeDailyStreakForCandidate(candidateHistory);
 
@@ -2131,16 +2141,16 @@ function renderStudentDashboard() {
   if (metaText) metaText.textContent = `${activeStudentProfile.class_level} • ${activeStudentProfile.school_name}`;
   if (uploadLabel) uploadLabel.classList.remove("hidden");
 
-  const myName = activeStudentProfile.full_name.trim().toLowerCase();
-  const myClass = activeStudentProfile.class_level;
-  const rows = examRecords.filter(
-    r => (r.candidateName || "").trim().toLowerCase() === myName && r.classLevel === myClass
+  const myName = normalizePersonName(activeStudentProfile.full_name);
+  const myClass = normalizeClassCode(activeStudentProfile.class_level);
+  const rows = (examRecords || []).filter(
+    r => normalizePersonName(r.candidateName) === myName && normalizeClassCode(r.classLevel) === myClass
   );
 
-  const totalPoints = rows.reduce((sum, r) => sum + (r.pointsEarned || 0), 0);
+  const totalPoints = rows.reduce((sum, r) => sum + Number(r.pointsEarned || 0), 0);
   const liveStreak = computeDailyStreakForCandidate(rows);
   const avgScore = rows.length > 0
-    ? Math.round(rows.reduce((sum, r) => sum + (r.percentage || 0), 0) / rows.length)
+    ? Math.round(rows.reduce((sum, r) => sum + Number(r.percentage || 0), 0) / rows.length)
     : 0;
 
   document.getElementById("dash-total-points").textContent = `${totalPoints} pts`;
@@ -2179,7 +2189,7 @@ function renderClassLeaderboard() {
   const tbody = document.getElementById("leaderboard-tbody");
   if (!tbody) return;
 
-  const classFilter = classSelect ? classSelect.value : "ALL";
+  const classFilter = classSelect ? normalizeClassCode(classSelect.value) : "ALL";
   const subjectFilter = subjectSelect ? subjectSelect.value : "ALL";
 
   if (titleEl) {
@@ -2197,11 +2207,12 @@ function renderClassLeaderboard() {
 
   const leaderboardMap = {};
 
-  examRecords.forEach(r => {
-    if (classFilter !== "ALL" && r.classLevel !== classFilter) return;
+  (examRecords || []).forEach(r => {
+    const recClass = normalizeClassCode(r.classLevel);
+    if (classFilter !== "ALL" && recClass !== classFilter) return;
     if (subjectFilter !== "ALL" && !(r.subjects || []).includes(subjectFilter)) return;
 
-    const identityKey = `${(r.candidateName || "").trim().toLowerCase()}__${r.classLevel}`;
+    const identityKey = `${normalizePersonName(r.candidateName)}__${recClass}`;
     const correct = Number(r.correct || 0);
     const total = Number(r.total || 0);
     const failed = Math.max(0, total - correct);
@@ -2211,7 +2222,7 @@ function renderClassLeaderboard() {
     if (!leaderboardMap[identityKey]) {
       leaderboardMap[identityKey] = {
         name: r.candidateName,
-        classLevel: r.classLevel,
+        classLevel: recClass,
         totalCorrect: correct,
         totalFailed: failed,
         totalQuestions: total,
@@ -2234,8 +2245,8 @@ function renderClassLeaderboard() {
     const rating = Number((entry.totalNetPoints * (accuracy / 100)).toFixed(1));
     const streak = computeDailyStreakForCandidate(entry.records);
     const isMe = activeStudentProfile &&
-      entry.name.trim().toLowerCase() === activeStudentProfile.full_name.trim().toLowerCase() &&
-      entry.classLevel === activeStudentProfile.class_level;
+      normalizePersonName(entry.name) === normalizePersonName(activeStudentProfile.full_name) &&
+      entry.classLevel === normalizeClassCode(activeStudentProfile.class_level);
 
     return { ...entry, accuracy, rating, streak, isMe };
   }).sort((a, b) => {
@@ -2602,7 +2613,7 @@ function syncAdminSubjectDropdown() {
   const subjectSelect = document.getElementById("admin-subject-select");
   if (!classEl || !subjectSelect) return;
 
-  const classLevel = classEl.value;
+  const classLevel = normalizeClassCode(classEl.value);
   const subjects = Object.keys(SYLLABUS_DIRECTORY[classLevel] || {});
   subjectSelect.innerHTML = "";
 
@@ -2622,7 +2633,7 @@ function syncAdminTopicDropdown() {
   const topicSelect = document.getElementById("admin-topic-select");
   if (!classEl || !subjectEl || !topicSelect) return;
 
-  const classLevel = classEl.value;
+  const classLevel = normalizeClassCode(classEl.value);
   const subject = subjectEl.value;
   const topics = (SYLLABUS_DIRECTORY[classLevel] && SYLLABUS_DIRECTORY[classLevel][subject]) || [];
 
@@ -2630,7 +2641,7 @@ function syncAdminTopicDropdown() {
 
   topics.forEach(topic => {
     const countForTopic = questionBank.filter(
-      q => q.classLevel === classLevel && q.subject === subject && q.topic === topic
+      q => normalizeClassCode(q.classLevel) === classLevel && q.subject === subject && q.topic === topic
     ).length;
 
     const opt = document.createElement("option");
@@ -2648,7 +2659,7 @@ function renderAdminTopicPills(classLevel, subject, topics) {
   if (!progressEl || !pillsContainer) return;
 
   const totalForSubject = questionBank.filter(
-    q => q.classLevel === classLevel && q.subject === subject
+    q => normalizeClassCode(q.classLevel) === classLevel && q.subject === subject
   ).length;
   progressEl.textContent =
     `${classLevel} → ${subject} (${totalForSubject} / ${MAX_QUESTIONS_PER_SUBJECT} Questions Uploaded)`;
@@ -2658,7 +2669,7 @@ function renderAdminTopicPills(classLevel, subject, topics) {
 
   topics.forEach(topic => {
     const count = questionBank.filter(
-      q => q.classLevel === classLevel && q.subject === subject && q.topic === topic
+      q => normalizeClassCode(q.classLevel) === classLevel && q.subject === subject && q.topic === topic
     ).length;
 
     const pill = document.createElement("button");
@@ -2698,7 +2709,7 @@ function clearAdminDiagramInput() {
 
 async function handleAdminQuestionSave(event) {
   event.preventDefault();
-  const classLevel = document.getElementById("admin-class-select")?.value || "JSS 3";
+  const classLevel = normalizeClassCode(document.getElementById("admin-class-select")?.value || "JSS 3");
   const subject = document.getElementById("admin-subject-select")?.value || "";
   const customTopic = (document.getElementById("admin-custom-topic")?.value || "").trim();
   const selectedTopic = customTopic || document.getElementById("admin-topic-select")?.value || "General";
@@ -2766,7 +2777,7 @@ function renderAdminRepository() {
   totalEl.textContent = questionBank.length;
 
   const previousValue = filterSelect.value || "ALL";
-  const uniquePools = Array.from(new Set(questionBank.map(q => `${q.classLevel} • ${q.subject}`)));
+  const uniquePools = Array.from(new Set(questionBank.map(q => `${normalizeClassCode(q.classLevel)} • ${q.subject}`)));
 
   filterSelect.innerHTML = `<option value="ALL">All Uploaded Subjects (${questionBank.length})</option>`;
   uniquePools.forEach(pool => {
@@ -2781,7 +2792,7 @@ function renderAdminRepository() {
 
   const activeFilter = filterSelect.value;
   const visibleQuestions = questionBank.filter(q =>
-    activeFilter === "ALL" ? true : `${q.classLevel} • ${q.subject}` === activeFilter
+    activeFilter === "ALL" ? true : `${normalizeClassCode(q.classLevel)} • ${q.subject}` === activeFilter
   );
 
   visibleQuestions.slice().reverse().forEach(q => {
@@ -2790,7 +2801,7 @@ function renderAdminRepository() {
     row.innerHTML = `
       <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:6px;">
         <div>
-          <strong>${q.classLevel} • ${q.subject}</strong>
+          <strong>${normalizeClassCode(q.classLevel)} • ${q.subject}</strong>
           <span class="source-badge">${q.examSource || "WAEC/JAMB/NECO"}</span>
           <span class="topic-badge">${q.topic}</span>
         </div>
