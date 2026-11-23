@@ -384,6 +384,8 @@ const MAX_TAB_WARNINGS = 3;
 const LETTERS = ["A", "B", "C", "D"];
 
 let questionBank = [];
+let questionCountsBySubject = {};
+let totalServerQuestionCount = 0;
 let examRecords = [];
 let tournamentEntries = [];
 let tournamentBracketData = {
@@ -520,6 +522,7 @@ async function handleStudentAuth(event) {
       return;
     }
     if (feedback) feedback.textContent = "";
+    await syncRecordsAndBracketFromServer();
     applySignedInProfile(data.student);
   } catch (err) {
     if (feedback) {
@@ -602,7 +605,7 @@ function handleProfilePhotoUpload(event) {
             avatar_data: compressedDataUrl
           })
         });
-        await syncFromServer();
+        await syncRecordsAndBracketFromServer();
         renderWorldCupBracket();
       } catch (err) {}
     };
@@ -667,56 +670,83 @@ function computeDailyStreakForCandidate(recordsList) {
 }
 
 /**
- * 2. SERVER SYNC & INITIALIZATION
+ * 2. SERVER-FIRST SYNC (ZERO BROWSER STORAGE FOR RECORDS OR BANK)
  */
-function safeSetStorage(key, value) {
-  try {
-    localStorage.setItem(key, JSON.stringify(value));
-  } catch (e) {
-    console.warn("Storage quota skipped for", key);
-  }
-}
-
-async function syncFromServer() {
-  // 1. Free up the 5MB browser quota immediately (Flask DB holds the master bank)
+async function rescueAndPurgeBrowserStorage() {
   try { localStorage.removeItem(BANK_STORAGE_KEY); } catch (e) {}
 
-  // 2. Silently rescue any trapped local exam records on this device
   try {
-    const localRecs = JSON.parse(localStorage.getItem(RECORDS_STORAGE_KEY) || "[]");
-    if (Array.isArray(localRecs) && localRecs.length > 0) {
-      await fetch("/api/records/sync", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(localRecs)
-      });
+    const rawRecs = localStorage.getItem(RECORDS_STORAGE_KEY);
+    if (rawRecs) {
+      const localRecs = JSON.parse(rawRecs);
+      if (Array.isArray(localRecs) && localRecs.length > 0) {
+        const syncRes = await fetch("/api/records/sync", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(localRecs)
+        });
+        if (syncRes.ok) {
+          localStorage.removeItem(RECORDS_STORAGE_KEY);
+        }
+      } else {
+        localStorage.removeItem(RECORDS_STORAGE_KEY);
+      }
     }
   } catch (e) {}
 
-  // 3. Fetch fresh live data from PythonAnywhere Flask DB
+  try { localStorage.removeItem(TOURNAMENTS_STORAGE_KEY); } catch (e) {}
+}
+
+async function syncRecordsAndBracketFromServer() {
+  await rescueAndPurgeBrowserStorage();
   try {
-    const [qRes, rRes, bRes] = await Promise.all([
-      fetch("/api/questions"),
-      fetch("/api/records"),
-      fetch("/api/tournaments/bracket")
+    const [cRes, rRes, bRes] = await Promise.all([
+      fetch("/api/questions/counts", { cache: "no-store" }),
+      fetch("/api/records", { cache: "no-store" }),
+      fetch("/api/tournaments/bracket", { cache: "no-store" })
     ]);
-    if (qRes.ok) {
-      questionBank = await qRes.json();
+    if (cRes.ok) {
+      const cData = await cRes.json();
+      totalServerQuestionCount = Number(cData.total || 0);
+      questionCountsBySubject = cData.bySubject || {};
     }
     if (rRes.ok) {
       examRecords = await rRes.json();
-      safeSetStorage(RECORDS_STORAGE_KEY, examRecords);
     }
     if (bRes.ok) {
       tournamentBracketData = await bRes.json();
       tournamentEntries = tournamentBracketData.entries || [];
-      safeSetStorage(TOURNAMENTS_STORAGE_KEY, tournamentEntries);
     }
-    return;
-  } catch (err) {}
+  } catch (err) {
+    console.error("Server sync error:", err);
+  }
+}
 
-  examRecords = JSON.parse(localStorage.getItem(RECORDS_STORAGE_KEY) || "[]");
-  tournamentEntries = JSON.parse(localStorage.getItem(TOURNAMENTS_STORAGE_KEY) || "[]");
+async function fetchQuestionsForSubjects(classLevel, subjectsList) {
+  const query = encodeURIComponent((subjectsList || []).join("||"));
+  const res = await fetch(
+    `/api/questions?class_level=${encodeURIComponent(classLevel)}&subjects=${query}`,
+    { cache: "no-store" }
+  );
+  if (!res.ok) throw new Error("Failed to load questions from server.");
+  return await res.json();
+}
+
+async function loadAllQuestionsForAdmin() {
+  try {
+    const res = await fetch("/api/questions", { cache: "no-store" });
+    if (res.ok) {
+      questionBank = await res.json();
+      totalServerQuestionCount = questionBank.length;
+    }
+  } catch (err) {}
+}
+
+async function syncFromServer(includeFullBank = false) {
+  await syncRecordsAndBracketFromServer();
+  if (includeFullBank) {
+    await loadAllQuestionsForAdmin();
+  }
 }
 
 function getCandidateIdentityKey(name, regNumber, classLevel) {
@@ -805,7 +835,9 @@ function persistActiveExamProgress() {
     tournamentStage: session.tournamentStage,
     tournamentTitle: session.tournamentTitle
   };
-  localStorage.setItem(ACTIVE_SESSION_KEY, JSON.stringify(snapshot));
+  try {
+    localStorage.setItem(ACTIVE_SESSION_KEY, JSON.stringify(snapshot));
+  } catch (e) {}
 }
 
 function clearSavedActiveSession() {
@@ -853,16 +885,9 @@ window.addEventListener("DOMContentLoaded", async () => {
   const footerYear = document.getElementById("footer-year");
   if (footerYear) footerYear.textContent = new Date().getFullYear();
 
-  await syncFromServer();
+  await syncRecordsAndBracketFromServer();
   if (activeStudentProfile) applySignedInProfile(activeStudentProfile);
   renderCandidateSubjects();
-  if (isExaminerUnlocked()) {
-    syncAdminSubjectDropdown();
-    syncAdminTournamentControls();
-    renderAdminRepository();
-    renderAdminMonitor();
-    renderWeakTopicsAnalytics();
-  }
   renderStudentDashboard();
   renderClassLeaderboard();
   renderWorldCupBracket();
@@ -942,7 +967,7 @@ async function switchPortalView(mode) {
   document.getElementById("btn-admin-view")?.classList.toggle("active", mode === "admin");
   document.querySelectorAll(".view-section").forEach(sec => sec.classList.remove("active"));
 
-  await syncFromServer();
+  await syncFromServer(mode === "admin");
 
   if (mode === "admin") {
     const adminSection = document.getElementById("view-admin");
@@ -1051,9 +1076,10 @@ function renderCandidateSubjects() {
   grid.innerHTML = "";
 
   subjectNames.forEach((subject, idx) => {
-    const uploadedCount = questionBank.filter(
-      q => q.classLevel === classLevel && q.subject === subject
-    ).length;
+    const countKey = `${classLevel}__${subject}`;
+    const uploadedCount = questionCountsBySubject[countKey] !== undefined
+      ? questionCountsBySubject[countKey]
+      : questionBank.filter(q => q.classLevel === classLevel && q.subject === subject).length;
 
     const label = document.createElement("label");
     label.className = "subject-card-label";
@@ -1105,8 +1131,8 @@ function shuffleQuestionOptions(questionObj) {
 /**
  * 4. SMART RESHUFFLE ENGINE (Prioritizes Unseen WAEC/JAMB/NECO Questions)
  */
-function buildSmartShuffledPool(classLevel, subject, desiredCount, seenIdSet) {
-  const allSubjectQuestions = questionBank.filter(
+function buildSmartShuffledPool(sourceQuestions, classLevel, subject, desiredCount, seenIdSet) {
+  const allSubjectQuestions = (sourceQuestions || []).filter(
     q => q.classLevel === classLevel && q.subject === subject
   );
 
@@ -1142,7 +1168,7 @@ function buildSmartShuffledPool(classLevel, subject, desiredCount, seenIdSet) {
   return prioritized;
 }
 
-function startOfficialExam(event) {
+async function startOfficialExam(event) {
   event.preventDefault();
   const candidateName = (document.getElementById("candidate-name")?.value || "").trim();
   const regNumber = (document.getElementById("candidate-reg-no")?.value || "").trim();
@@ -1157,12 +1183,36 @@ function startOfficialExam(event) {
   }
 
   const selectedSubjects = checkedBoxes.map(box => box.value);
+  const submitBtn = event.target.querySelector('button[type="submit"]');
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.textContent = "Loading Live Questions from Server...";
+  }
+
+  let fetchedPool = [];
+  try {
+    fetchedPool = await fetchQuestionsForSubjects(classLevel, selectedSubjects);
+  } catch (err) {
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.textContent = "Start Examination Now →";
+    }
+    alert("Could not load questions from server. Check your internet connection and try again.");
+    return;
+  }
+
+  if (submitBtn) {
+    submitBtn.disabled = false;
+    submitBtn.textContent = "Start Examination Now →";
+  }
+
   const seenIdSet = getSeenQuestionIdSet(candidateName, regNumber, classLevel);
   const questionsBySubject = {};
   const currentIndexBySubject = {};
 
   selectedSubjects.forEach(subject => {
     questionsBySubject[subject] = buildSmartShuffledPool(
+      fetchedPool,
       classLevel,
       subject,
       questionsPerSubject,
@@ -1261,7 +1311,6 @@ function renderWorldCupBracket() {
     }
   }
 
-  // Render Junior Wing (JSS 1–3) & Senior Wing (SSS 1–3) Class Representative Slots
   const renderWingSlots = (containerId, classList) => {
     const container = document.getElementById(containerId);
     if (!container) return;
@@ -1302,7 +1351,6 @@ function renderWorldCupBracket() {
   renderWingSlots("wc-junior-slots", ["JSS 1", "JSS 2", "JSS 3"]);
   renderWingSlots("wc-senior-slots", ["SSS 1", "SSS 2", "SSS 3"]);
 
-  // Render Center Grand Finale Matchup & Crown
   const jChamp = data.juniorChampion;
   const sChamp = data.seniorChampion;
   const oChamp = data.overallChampion;
@@ -1394,7 +1442,7 @@ function closeTournamentBriefingModal() {
   document.getElementById("tournament-briefing-modal")?.classList.add("hidden");
 }
 
-function confirmStartTournamentQuiz() {
+async function confirmStartTournamentQuiz() {
   const check = checkStudentTournamentEligibility();
   if (!check.ok) {
     closeTournamentBriefingModal();
@@ -1402,19 +1450,29 @@ function confirmStartTournamentQuiz() {
     return;
   }
 
-  closeTournamentBriefingModal();
   const studentClass = activeStudentProfile.class_level || "JSS 3";
   const division = studentClass.startsWith("SSS") ? "SSS" : "JSS";
   const availableSubjects = Object.keys(SYLLABUS_DIRECTORY[studentClass] || {});
   const selectedSubjects = availableSubjects.slice(0, 3);
-  const questionsPerSubject = 10; // 30 total questions for a crisp 15-minute World Cup match
+  const questionsPerSubject = 10;
   const durationMins = 15;
+
+  let fetchedPool = [];
+  try {
+    fetchedPool = await fetchQuestionsForSubjects(studentClass, selectedSubjects);
+  } catch (err) {
+    alert("Could not load tournament questions from server. Check your internet connection.");
+    return;
+  }
+
+  closeTournamentBriefingModal();
   const seenIdSet = getSeenQuestionIdSet(activeStudentProfile.full_name, "", studentClass);
 
   const questionsBySubject = {};
   const currentIndexBySubject = {};
   selectedSubjects.forEach(subject => {
     questionsBySubject[subject] = buildSmartShuffledPool(
+      fetchedPool,
       studentClass,
       subject,
       questionsPerSubject,
@@ -1516,7 +1574,7 @@ async function updateTournamentControl(isOpen) {
       alert(data.error || "Could not update tournament state.");
       return;
     }
-    await syncFromServer();
+    await syncRecordsAndBracketFromServer();
     syncAdminTournamentControls();
     renderWorldCupBracket();
     alert(isOpen
@@ -1535,7 +1593,7 @@ async function resetTournamentCup() {
       alert("Examiner authorization required to reset the tournament.");
       return;
     }
-    await syncFromServer();
+    await syncRecordsAndBracketFromServer();
     syncAdminTournamentControls();
     renderWorldCupBracket();
     renderTournamentStandings();
@@ -1815,8 +1873,25 @@ function promptExamSubmission() {
 }
 
 /**
- * 5. SCORE COMPUTATION, SEEN-ID TRACKING & SERVER PERSISTENCE
+ * 5. SCORE COMPUTATION & IMMEDIATE DATABASE UPLOAD
  */
+async function postExamRecordImmediately(payload) {
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const res = await fetch("/api/records", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      if (res.ok) {
+        return await res.json();
+      }
+    } catch (err) {}
+    await new Promise(resolve => setTimeout(resolve, 400 * (attempt + 1)));
+  }
+  return null;
+}
+
 async function computeAndSaveResults() {
   clearInterval(session.timerInterval);
   clearInterval(autoSaveIntervalId);
@@ -1888,53 +1963,35 @@ async function computeAndSaveResults() {
   const pointsEarned = Math.max(0, (totalCorrect * 3) - (totalFailed * 1) + (percentage >= 70 ? 10 : 0));
   const isoDate = new Date().toISOString().slice(0, 10);
 
-  let savedRecord = null;
-  try {
-    const res = await fetch("/api/records", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        regNumber: session.regNumber,
-        candidateName: session.candidateName,
-        classLevel: session.classLevel,
-        subjects: session.subjects,
-        correct: totalCorrect,
-        total: totalQuestions,
-        percentage,
-        pointsEarned,
-        tabWarnings: session.tabWarnings,
-        topicStats,
-        questionIds: realQuestionIdsServed,
-        isoDate
-      })
-    });
-    if (res.ok) {
-      savedRecord = await res.json();
-      if (!savedRecord.isoDate) savedRecord.isoDate = isoDate;
-      examRecords.push(savedRecord);
-      safeSetStorage(RECORDS_STORAGE_KEY, examRecords);
-    }
-  } catch (err) {}
+  const payload = {
+    regNumber: session.regNumber,
+    candidateName: session.candidateName,
+    classLevel: session.classLevel,
+    subjects: session.subjects,
+    correct: totalCorrect,
+    total: totalQuestions,
+    percentage,
+    pointsEarned,
+    tabWarnings: session.tabWarnings,
+    topicStats,
+    questionIds: realQuestionIdsServed,
+    isoDate
+  };
+
+  let savedRecord = await postExamRecordImmediately(payload);
 
   if (!savedRecord) {
     savedRecord = {
       id: Date.now(),
-      regNumber: session.regNumber,
-      candidateName: session.candidateName,
-      classLevel: session.classLevel,
-      subjects: session.subjects,
-      correct: totalCorrect,
-      total: totalQuestions,
-      percentage,
-      pointsEarned,
-      tabWarnings: session.tabWarnings,
-      topicStats,
-      questionIds: realQuestionIdsServed,
-      isoDate,
+      ...payload,
       date: new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })
     };
-    examRecords.push(savedRecord);
-    safeSetStorage(RECORDS_STORAGE_KEY, examRecords);
+    try {
+      const pending = JSON.parse(localStorage.getItem(RECORDS_STORAGE_KEY) || "[]");
+      pending.push(savedRecord);
+      localStorage.setItem(RECORDS_STORAGE_KEY, JSON.stringify(pending));
+    } catch (e) {}
+    alert("Network unstable: Your score has been queued and will sync automatically to the database once connection returns.");
   }
 
   if (session.isTournament && activeStudentProfile) {
@@ -1945,7 +2002,7 @@ async function computeAndSaveResults() {
     const totalTournamentPoints = pointsEarned + speedBonus;
 
     try {
-      const tRes = await fetch("/api/tournaments", {
+      await fetch("/api/tournaments", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -1961,13 +2018,14 @@ async function computeAndSaveResults() {
           speedBonus
         })
       });
-      if (tRes.ok) {
-        await syncFromServer();
-        renderWorldCupBracket();
-        renderTournamentStandings();
-      }
     } catch (err) {}
   }
+
+  await syncRecordsAndBracketFromServer();
+  renderWorldCupBracket();
+  renderTournamentStandings();
+  renderClassLeaderboard();
+  renderStudentDashboard();
 
   const candidateHistory = examRecords.filter(
     r => (r.candidateName || "").trim().toLowerCase() === session.candidateName.trim().toLowerCase() &&
@@ -2258,7 +2316,7 @@ function renderAdminMonitor() {
   attemptsEl.textContent = `${totalAttempts}`;
   if (candidatesEl) candidatesEl.textContent = `${uniqueKeys.size}`;
   if (avgEl) avgEl.textContent = `${platformAvg}%`;
-  if (questionsEl) questionsEl.textContent = `${questionBank.length}`;
+  if (questionsEl) questionsEl.textContent = `${questionBank.length || totalServerQuestionCount}`;
 
   tbody.innerHTML = "";
 
@@ -2383,6 +2441,7 @@ async function sendCSVFormData(formData, onSuccessClear) {
     }
 
     questionBank = data.questions || questionBank;
+    totalServerQuestionCount = questionBank.length;
     if (onSuccessClear) onSuccessClear();
     syncAdminTopicDropdown();
     renderAdminRepository();
@@ -2434,7 +2493,7 @@ async function clearAllSavedRecords() {
     await fetch("/api/records", { method: "DELETE" });
   } catch (err) {}
   examRecords = [];
-  safeSetStorage(RECORDS_STORAGE_KEY, examRecords);
+  localStorage.removeItem(RECORDS_STORAGE_KEY);
   localStorage.removeItem(SEEN_HISTORY_KEY);
   renderStudentDashboard();
   renderClassLeaderboard();
@@ -2673,13 +2732,15 @@ async function handleAdminQuestionSave(event) {
     if (res.ok) {
       const savedQ = await res.json();
       questionBank.push(savedQ);
+      totalServerQuestionCount = questionBank.length;
     } else {
       const errData = await res.json().catch(() => ({}));
       alert(errData.error || "Could not save question. Make sure you are signed in as Examiner Admin.");
       return;
     }
   } catch (err) {
-    questionBank.push({ id: Date.now(), ...payload });
+    alert("Could not reach server to save question.");
+    return;
   }
 
   ["admin-question-prompt", "admin-diagram-svg", "admin-opt-a", "admin-opt-b", "admin-opt-c", "admin-opt-d", "admin-explanation-input", "admin-custom-topic"].forEach(id => {
@@ -2750,6 +2811,7 @@ async function removeQuestionFromBank(id) {
     await fetch(`/api/questions/${id}`, { method: "DELETE" });
   } catch (err) {}
   questionBank = questionBank.filter(q => q.id !== id);
+  totalServerQuestionCount = questionBank.length;
   syncAdminTopicDropdown();
   renderAdminRepository();
   renderAdminMonitor();
@@ -2782,6 +2844,7 @@ function restoreQuestionBankBackup(event) {
         });
         if (res.ok) {
           questionBank = await res.json();
+          totalServerQuestionCount = questionBank.length;
           syncAdminTopicDropdown();
           renderAdminRepository();
           renderAdminMonitor();
