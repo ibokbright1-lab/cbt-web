@@ -494,10 +494,47 @@ def api_verify_pin():
     return jsonify({"valid": False, "error": "Invalid examiner passcode."}), 401
 
 
+@app.route("/api/questions/counts", methods=["GET"])
+def api_get_question_counts():
+    conn = get_db_connection()
+    rows = conn.execute(
+        "SELECT class_level, subject, COUNT(*) AS cnt FROM questions GROUP BY class_level, subject"
+    ).fetchall()
+    conn.close()
+    counts = {}
+    total = 0
+    for r in rows:
+        key = f"{r['class_level']}__{r['subject']}"
+        counts[key] = int(r["cnt"])
+        total += int(r["cnt"])
+    return jsonify({"total": total, "bySubject": counts})
+
+
 @app.route("/api/questions", methods=["GET"])
 def api_get_questions():
+    class_level = request.args.get("class_level", "").strip()
+    subjects_param = request.args.get("subjects", "").strip()
+
     conn = get_db_connection()
-    rows = conn.execute("SELECT * FROM questions ORDER BY id ASC").fetchall()
+    if class_level and subjects_param:
+        norm_cls = normalize_class_level(class_level, default=class_level)
+        sub_list = [s.strip() for s in subjects_param.split("||") if s.strip()]
+        if sub_list:
+            placeholders = ",".join("?" for _ in sub_list)
+            rows = conn.execute(
+                f"SELECT * FROM questions WHERE class_level = ? AND subject IN ({placeholders}) ORDER BY id ASC",
+                [norm_cls] + sub_list
+            ).fetchall()
+        else:
+            rows = []
+    elif class_level:
+        norm_cls = normalize_class_level(class_level, default=class_level)
+        rows = conn.execute(
+            "SELECT * FROM questions WHERE class_level = ? ORDER BY id ASC",
+            (norm_cls,)
+        ).fetchall()
+    else:
+        rows = conn.execute("SELECT * FROM questions ORDER BY id ASC").fetchall()
     conn.close()
     return jsonify([row_to_question_dict(r) for r in rows])
 
@@ -759,7 +796,7 @@ def api_sync_local_records():
     synced = 0
 
     for data in items:
-        candidate_name = str(data.get("candidateName", "")).strip()
+        candidate_name = " ".join(str(data.get("candidateName", "")).strip().split())
         if not candidate_name:
             continue
         class_level = normalize_class_level(data.get("classLevel", "JSS 3"), default="JSS 3")
@@ -778,7 +815,7 @@ def api_sync_local_records():
 
         exists = cursor.execute("""
             SELECT id FROM exam_records
-            WHERE LOWER(candidate_name) = LOWER(?) AND class_level = ?
+            WHERE LOWER(TRIM(candidate_name)) = LOWER(?) AND class_level = ?
               AND subjects_json = ? AND correct = ? AND total = ? AND date_label = ?
         """, (candidate_name, class_level, subjects_json, correct, total, date_label)).fetchone()
 
@@ -833,14 +870,12 @@ def api_get_tournament_bracket():
     cup_name = state_row["cup_name"] if state_row else "Scholars Super Cup"
     entries = [row_to_tournament_dict(r) for r in rows]
 
-    # Stage 1: Best qualifier per class becomes Class Representative
     class_list = ["JSS 1", "JSS 2", "JSS 3", "SSS 1", "SSS 2", "SSS 3"]
     reps = {}
     for cls in class_list:
         cls_entries = [e for e in entries if e["stage"] == "qualifiers" and e["classLevel"] == cls]
         reps[cls] = max(cls_entries, key=rank_tournament_key) if cls_entries else None
 
-    # Stage 2: Division Playoffs (Junior Wing vs Senior Wing)
     jss_playoffs = sorted(
         [e for e in entries if e["stage"] == "playoffs" and e["division"] == "JSS"],
         key=rank_tournament_key,
@@ -854,7 +889,6 @@ def api_get_tournament_bracket():
     junior_champion = jss_playoffs[0] if jss_playoffs else None
     senior_champion = sss_playoffs[0] if sss_playoffs else None
 
-    # Stage 3: Grand Finale (Junior Champion vs Senior Champion)
     finale_entries = sorted(
         [e for e in entries if e["stage"] == "finale"],
         key=rank_tournament_key,
