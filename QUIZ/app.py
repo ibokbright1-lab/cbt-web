@@ -12,6 +12,11 @@ from werkzeug.security import check_password_hash, generate_password_hash
 
 app = Flask(__name__)
 app.secret_key = (os.environ.get("SECRET_KEY") or "").strip() or secrets.token_hex(32)
+app.config["SESSION_COOKIE_HTTPONLY"] = True
+app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+if (os.environ.get("FLASK_ENV") or "").strip().lower() == "production" or os.environ.get("PYTHONANYWHERE_DOMAIN"):
+    app.config["SESSION_COOKIE_SECURE"] = True
+
 DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "scholars_cbt.db")
 ADMIN_PIN = (os.environ.get("CBT_ADMIN_PIN") or "2026").strip()
 VALID_CLASSES = {"JSS 1", "JSS 2", "JSS 3", "SSS 1", "SSS 2", "SSS 3"}
@@ -520,11 +525,15 @@ def parse_correct_option(raw_val):
 
 
 def insert_questions_from_csv_text(cursor, raw_text, default_class="JSS 3", default_subject="", default_topic=""):
-    reader = csv.DictReader(io.StringIO(raw_text))
+    cleaned_text = (raw_text or "").strip()
+    if not cleaned_text:
+        return 0, 0, 0, "CSV is empty or missing headers."
+
+    reader = csv.DictReader(io.StringIO(cleaned_text, newline=""))
     if not reader.fieldnames:
         return 0, 0, 0, "CSV is empty or missing headers."
 
-    normalized_headers = {h.strip().lower(): h for h in reader.fieldnames if h}
+    normalized_headers = {h.strip().lower(): h for h in reader.fieldnames if h and h.strip()}
     required_keys = ["prompt", "option_a", "option_b", "option_c", "option_d"]
     for key in required_keys:
         if key not in normalized_headers:
@@ -532,8 +541,13 @@ def insert_questions_from_csv_text(cursor, raw_text, default_class="JSS 3", defa
 
     def get_col(row_dict, key, fallback=""):
         header_name = normalized_headers.get(key)
-        val = str(row_dict.get(header_name, "") or "").strip() if header_name else ""
-        return val if val else fallback
+        if not header_name:
+            return fallback
+        val = row_dict.get(header_name)
+        if val is None:
+            return fallback
+        text_val = str(val).strip()
+        return text_val if text_val else fallback
 
     existing_rows = cursor.execute(
         "SELECT class_level, subject, prompt FROM questions"
@@ -553,21 +567,29 @@ def insert_questions_from_csv_text(cursor, raw_text, default_class="JSS 3", defa
     now_iso = datetime.utcnow().isoformat()
 
     for row_dict in reader:
+        if not row_dict or all(not str(v or "").strip() for v in row_dict.values()):
+            continue
+
         prompt = get_col(row_dict, "prompt")
         subject = get_col(row_dict, "subject", default_subject)
         if not prompt or not subject:
             skipped_count += 1
             continue
 
-        class_level = normalize_class_level(get_col(row_dict, "class_level", default_class), default=default_class)
+        class_level = normalize_class_level(
+            get_col(row_dict, "class_level", default_class),
+            default=default_class,
+        )
         topic = get_col(row_dict, "topic", default_topic or "General Syllabus Topic") or "General Syllabus Topic"
         exam_source = get_col(row_dict, "exam_source", "WAEC/JAMB/NECO") or "WAEC/JAMB/NECO"
-        diagram_svg = get_col(row_dict, "diagram_svg", "") or None
+        raw_svg = get_col(row_dict, "diagram_svg", "")
+        diagram_svg = raw_svg if raw_svg else None
+
         opts = [
             get_col(row_dict, "option_a"),
             get_col(row_dict, "option_b"),
             get_col(row_dict, "option_c"),
-            get_col(row_dict, "option_d")
+            get_col(row_dict, "option_d"),
         ]
         if not all(opts):
             skipped_count += 1
