@@ -1,6 +1,7 @@
 /**
  * 1. SUBJECTS & SYLLABUS TOPICS DIRECTORY (JSS 1 – SSS 3)
- * Strict per-subject isolation • 250-Question Bank Target • Smart Reshuffle
+ * Strict per-subject isolation • 1,000-Question Bank Target • Smart Reshuffle
+ * Includes Geography (Senior), PHE & CCA (Junior)
  */
 const SYLLABUS_DIRECTORY = {
   "JSS 1": {
@@ -42,6 +43,22 @@ const SYLLABUS_DIRECTORY = {
       "Citizenship, Rights & Duties",
       "National Symbols & Consciousness",
       "Safety & Common Crimes Prevention"
+    ],
+    "Physical and Health Education (PHE)": [
+      "Meaning, Scope & Objectives of Physical and Health Education",
+      "Physical Fitness, Body Conditioning & Exercise Safety",
+      "Personal, School & Community Health",
+      "Athletics: Track & Field Events (Sprints & Shot Put)",
+      "Ball Games: Volleyball & Football Basics",
+      "Food, Nutrition & Balanced Diet"
+    ],
+    "Cultural and Creative Arts (CCA)": [
+      "Introduction to Cultural and Creative Arts",
+      "Elements & Principles of Art and Design",
+      "Crafts: Paper Craft, Collage, Mosaic & Beadwork",
+      "Introduction to Music: Rudiments, Staff & Notes",
+      "Drama & Theatre: Meaning, Elements & Playmaking",
+      "Nigerian Traditional Dances & Teamwork"
     ]
   },
   "JSS 2": {
@@ -85,6 +102,22 @@ const SYLLABUS_DIRECTORY = {
       "Courage & Federation",
       "Rule of Law & Human Rights",
       "Electoral Processes & Voter Responsibility"
+    ],
+    "Physical and Health Education (PHE)": [
+      "Posture, Postural Defects & Corrective Exercises",
+      "Recreation, Leisure & Dance Activities",
+      "First Aid, Safety Education & Sports Injuries",
+      "Striking Games: Table Tennis & Lawn Tennis",
+      "Communicable & Non-Communicable Diseases",
+      "Human Trafficking & Sports Laws"
+    ],
+    "Cultural and Creative Arts (CCA)": [
+      "Colour Theory, Painting & Shading Techniques",
+      "Pattern Making, Motif Design & Tie-Dye",
+      "Music: Scales, Key Signatures & Musical Instruments",
+      "Drama: Rehearsal, Stage Craft & Costume Design",
+      "Nigerian Art Cultures (Nok, Ife, Benin & Igbo-Ukwu)",
+      "Self-Control, Unity & Cultural Appreciation"
     ]
   },
   "JSS 3": {
@@ -156,6 +189,22 @@ const SYLLABUS_DIRECTORY = {
       "Right Attitude to Work & Service Delivery",
       "Elections, Electoral Bodies (INEC) & Free and Fair Voting",
       "National Security, Common Crimes & Emergency Management"
+    ],
+    "Physical and Health Education (PHE)": [
+      "Physical Fitness & Body Conditioning Programmes",
+      "Athletics: Combined Events (Pentathlon & Decathlon) & Javelin/Pole Vault",
+      "Contact & Non-Contact Sports: Taekwondo, Boxing & Swimming",
+      "Family Life Education, Puberty & Responsible Health",
+      "Pathogens, Diseases & Disease Prevention",
+      "Nigerian Sports Heroes, Officials & Agencies"
+    ],
+    "Cultural and Creative Arts (CCA)": [
+      "Nigerian Traditional Art & Contemporary Nigerian Artists",
+      "Motifs, Embroidery, Knitting, Crocheting & Batik",
+      "Music: Sight Reading, Cadences, Chords & Composition",
+      "Drama & Theatre: Directing, Production & Media Arts",
+      "Exhibition, Display Techniques & Marketing of Artworks",
+      "Cultural Festivals & Creative Entrepreneurship"
     ]
   },
   "SSS 1": {
@@ -199,6 +248,15 @@ const SYLLABUS_DIRECTORY = {
       "Excretion, Growth & Cell Division (Mitosis and Meiosis)",
       "Tissues & Supporting Systems in Plants and Animals",
       "Basic Ecological Concepts & Micro-Organisms"
+    ],
+    "Geography": [
+      "Introduction to Geography, The Solar System & The Earth",
+      "Latitude, Longitude, Time Zones & Rotation/Revolution of the Earth",
+      "Structure of the Earth & Types of Rocks",
+      "Major Landforms: Mountains, Plateaus & Plains",
+      "Weather, Climate & Elements of Weather",
+      "Map Reading: Scales, Direction, Bearing & Conventional Signs",
+      "Geography of Nigeria: Location, Relief, Drainage & Climate"
     ],
     "Agricultural Science": [
       "Meaning, Importance & Problems of Agriculture in Nigeria",
@@ -272,6 +330,14 @@ const SYLLABUS_DIRECTORY = {
       "Ecological Management, Pollution & Conservation",
       "Reproductive Systems in Plants & Vertebrates"
     ],
+    "Geography": [
+      "Action of Running Water (Rivers), Wind & Waves",
+      "Glacial Action & Karst (Limestone) Topography",
+      "World Climatic Regions & Vegetation Belts",
+      "Environmental Resources, Hazards & Conservation",
+      "Map Reading: Contours, Relief Profiles, Gradient & Cross-Sections",
+      "Population, Settlement & Transportation in Nigeria"
+    ],
     "Agricultural Science": [
       "Plant Nutrients, Nutrient Cycles & Irrigation/Drainage",
       "Agricultural Surveying, Farm Planning & Forestry",
@@ -340,6 +406,14 @@ const SYLLABUS_DIRECTORY = {
       "Genetics, Heredity & Variation",
       "Adaptation & Theories of Evolution"
     ],
+    "Geography": [
+      "Earthquakes, Volcanism & Plate Tectonics",
+      "Denudation, Weathering & Mass Movement",
+      "Geographical Information Systems (GIS) & Remote Sensing",
+      "World Trade, Tourism & Industrialization",
+      "Regional Geography of Africa & ECOWAS Cooperation",
+      "Statistical Maps, Diagrams & Advanced Map Interpretation"
+    ],
     "Agricultural Science": [
       "Crop Improvement, Genetics & Breeding",
       "Animal Health, Diseases & Parasite Control",
@@ -379,7 +453,7 @@ const TOURNAMENTS_STORAGE_KEY = "SCHOLARS_CBT_TOURNAMENTS_V1";
 const ACTIVE_SESSION_KEY = "SCHOLARS_CBT_ACTIVE_SESSION_V2";
 const SEEN_HISTORY_KEY = "SCHOLARS_CBT_SEEN_IDS_V1";
 const ACTIVE_PROFILE_KEY = "SCHOLARS_CBT_ACTIVE_PROFILE_V1";
-const MAX_QUESTIONS_PER_SUBJECT = 250;
+const MAX_QUESTIONS_PER_SUBJECT = 1000;
 const MAX_TAB_WARNINGS = 3;
 const LETTERS = ["A", "B", "C", "D"];
 
@@ -388,6 +462,15 @@ let questionCountsBySubject = {};
 let totalServerQuestionCount = 0;
 let examRecords = [];
 let tournamentEntries = [];
+let studyNotesCache = [];
+let customTournamentsData = [];
+let adminFlagsCache = [];
+
+let activeStudySubject = "";
+let activeStudyTopic = "";
+let activeStudyNoteObj = null;
+let lastStudiedContext = null;
+
 let tournamentBracketData = {
   isOpen: false,
   activeStage: "qualifiers",
@@ -423,7 +506,12 @@ let session = {
   isTournament: false,
   tournamentDivision: "",
   tournamentStage: "",
-  tournamentTitle: ""
+  tournamentTitle: "",
+  isCustomTournament: false,
+  customTournamentId: null,
+  isTopicPractice: false,
+  studiedSubject: "",
+  studiedTopic: ""
 };
 
 let calcState = {
@@ -435,6 +523,10 @@ let calcState = {
 
 function normalizePersonName(name) {
   return String(name || "").trim().replace(/\s+/g, " ").toLowerCase();
+}
+
+function normalizeTextKey(val) {
+  return String(val || "").trim().replace(/\s+/g, " ").toLowerCase();
 }
 
 function normalizeClassCode(cls) {
@@ -476,6 +568,31 @@ function renderFormattedPrompt(rawPrompt) {
   return clean
     .replace(/<table/gi, '<div class="question-table-wrap"><table')
     .replace(/<\/table>/gi, "</table></div>");
+}
+
+function renderFormattedNoteContent(rawText) {
+  const text = String(rawText || "").trim();
+  if (!text) return "";
+  if (/<(p|div|h[1-6]|ul|ol|li|table|svg|strong|em|br)\b/i.test(text)) {
+    return renderFormattedPrompt(text);
+  }
+  const escaped = text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+  return escaped
+    .split(/\n{2,}/)
+    .map(para => `<p>${para.replace(/\n/g, "<br>")}</p>`)
+    .join("");
+}
+
+function extractYouTubeEmbedUrl(url) {
+  const raw = String(url || "").trim();
+  if (!raw) return "";
+  const match = raw.match(
+    /(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/
+  );
+  return match ? `https://www.youtube.com/embed/${match[1]}` : "";
 }
 
 function renderAvatarContent(el, student) {
@@ -582,6 +699,8 @@ function applySignedInProfile(student) {
   renderStudentDashboard();
   renderClassLeaderboard();
   renderWorldCupBracket();
+  renderCustomTournaments();
+  renderStudyHub();
 }
 
 function handleProfilePhotoUpload(event) {
@@ -656,6 +775,8 @@ async function logoutStudentProfile() {
   if (authBox) authBox.classList.remove("hidden");
   renderStudentDashboard();
   renderWorldCupBracket();
+  renderCustomTournaments();
+  renderStudyHub();
 }
 
 function computeDailyStreakForCandidate(recordsList) {
@@ -685,7 +806,7 @@ function computeDailyStreakForCandidate(recordsList) {
 }
 
 /**
- * 2. SERVER-FIRST SYNC (ALWAYS PULLS LIVE RECORDS & PAINTS UI)
+ * 2. SERVER-FIRST SYNC (100% DATABASE-BACKED — NO BROWSER QUESTION STORAGE)
  */
 async function rescueAndPurgeBrowserStorage() {
   try { localStorage.removeItem(BANK_STORAGE_KEY); } catch (e) {}
@@ -715,17 +836,17 @@ async function rescueAndPurgeBrowserStorage() {
 async function syncRecordsAndBracketFromServer() {
   await rescueAndPurgeBrowserStorage();
   try {
-    const [rRes, bRes, cRes] = await Promise.all([
+    const [rRes, bRes, cRes, nRes, ctRes] = await Promise.all([
       fetch("/api/records", { cache: "no-store" }),
       fetch("/api/tournaments/bracket", { cache: "no-store" }),
-      fetch("/api/questions/counts", { cache: "no-store" })
+      fetch("/api/questions/counts", { cache: "no-store" }),
+      fetch("/api/study-notes", { cache: "no-store" }),
+      fetch("/api/custom-tournaments", { cache: "no-store" })
     ]);
 
     if (rRes.ok) {
       const serverRecords = await rRes.json();
-      if (Array.isArray(serverRecords)) {
-        examRecords = serverRecords;
-      }
+      if (Array.isArray(serverRecords)) examRecords = serverRecords;
     }
 
     if (bRes.ok) {
@@ -741,6 +862,16 @@ async function syncRecordsAndBracketFromServer() {
       totalServerQuestionCount = Number(cData.total || 0);
       questionCountsBySubject = cData.bySubject || {};
     }
+
+    if (nRes.ok) {
+      const notes = await nRes.json();
+      if (Array.isArray(notes)) studyNotesCache = notes;
+    }
+
+    if (ctRes.ok) {
+      const ctList = await ctRes.json();
+      if (Array.isArray(ctList)) customTournamentsData = ctList;
+    }
   } catch (err) {
     console.error("Server sync error:", err);
   }
@@ -749,6 +880,7 @@ async function syncRecordsAndBracketFromServer() {
   renderClassLeaderboard();
   renderWorldCupBracket();
   renderTournamentStandings();
+  renderCustomTournaments();
 }
 
 async function fetchQuestionsForSubjects(classLevel, subjectsList) {
@@ -761,12 +893,25 @@ async function fetchQuestionsForSubjects(classLevel, subjectsList) {
   return await res.json();
 }
 
+async function fetchQuestionsForSingleTopic(classLevel, subject, topic) {
+  const url = `/api/questions?class_level=${encodeURIComponent(classLevel)}&subject=${encodeURIComponent(subject)}&topic=${encodeURIComponent(topic)}`;
+  const res = await fetch(url, { cache: "no-store" });
+  if (!res.ok) throw new Error("Failed to load topic questions from server.");
+  return await res.json();
+}
+
 async function loadAllQuestionsForAdmin() {
   try {
-    const res = await fetch("/api/questions", { cache: "no-store" });
-    if (res.ok) {
-      questionBank = await res.json();
+    const [qRes, fRes] = await Promise.all([
+      fetch("/api/questions", { cache: "no-store" }),
+      fetch("/api/flags", { cache: "no-store" })
+    ]);
+    if (qRes.ok) {
+      questionBank = await qRes.json();
       totalServerQuestionCount = questionBank.length;
+    }
+    if (fRes.ok) {
+      adminFlagsCache = await fRes.json();
     }
   } catch (err) {}
 }
@@ -862,7 +1007,12 @@ function persistActiveExamProgress() {
     isTournament: session.isTournament,
     tournamentDivision: session.tournamentDivision,
     tournamentStage: session.tournamentStage,
-    tournamentTitle: session.tournamentTitle
+    tournamentTitle: session.tournamentTitle,
+    isCustomTournament: session.isCustomTournament,
+    customTournamentId: session.customTournamentId,
+    isTopicPractice: session.isTopicPractice,
+    studiedSubject: session.studiedSubject,
+    studiedTopic: session.studiedTopic
   };
   try {
     localStorage.setItem(ACTIVE_SESSION_KEY, JSON.stringify(snapshot));
@@ -898,7 +1048,12 @@ function resumeSavedSession() {
       isTournament: Boolean(saved.isTournament),
       tournamentDivision: saved.tournamentDivision || "",
       tournamentStage: saved.tournamentStage || "",
-      tournamentTitle: saved.tournamentTitle || ""
+      tournamentTitle: saved.tournamentTitle || "",
+      isCustomTournament: Boolean(saved.isCustomTournament),
+      customTournamentId: saved.customTournamentId || null,
+      isTopicPractice: Boolean(saved.isTopicPractice),
+      studiedSubject: saved.studiedSubject || "",
+      studiedTopic: saved.studiedTopic || ""
     };
     enterLiveExamArena();
   } catch (err) {
@@ -919,6 +1074,7 @@ window.addEventListener("DOMContentLoaded", async () => {
   checkResumeBanner();
   await syncRecordsAndBracketFromServer();
   if (activeStudentProfile) applySignedInProfile(activeStudentProfile);
+  renderStudyHub();
 
   if (window.location.hash === "#admin" && isExaminerUnlocked()) {
     openAdminGate();
@@ -987,6 +1143,7 @@ async function switchPortalView(mode) {
   }
 
   document.getElementById("btn-student-view")?.classList.toggle("active", mode === "student");
+  document.getElementById("btn-study-view")?.classList.toggle("active", mode === "study");
   document.getElementById("btn-leaderboard-view")?.classList.toggle("active", mode === "leaderboard");
   document.getElementById("btn-tournaments-view")?.classList.toggle("active", mode === "tournaments");
   document.getElementById("btn-dashboard-view")?.classList.toggle("active", mode === "dashboard");
@@ -1000,11 +1157,18 @@ async function switchPortalView(mode) {
     if (adminSection) {
       adminSection.classList.add("active");
       syncAdminSubjectDropdown();
+      syncAdminNoteSubjects();
       syncAdminTournamentControls();
+      renderAdminCustomTournaments();
+      renderAdminNotesList();
+      renderAdminFlagsList();
       renderAdminRepository();
       renderAdminMonitor();
       renderWeakTopicsAnalytics();
     }
+  } else if (mode === "study") {
+    document.getElementById("view-study")?.classList.add("active");
+    renderStudyHub();
   } else if (mode === "leaderboard") {
     document.getElementById("view-leaderboard")?.classList.add("active");
     renderClassLeaderboard();
@@ -1012,6 +1176,7 @@ async function switchPortalView(mode) {
     document.getElementById("view-tournaments")?.classList.add("active");
     renderWorldCupBracket();
     renderTournamentStandings();
+    renderCustomTournaments();
   } else if (mode === "dashboard") {
     document.getElementById("view-dashboard")?.classList.add("active");
     renderStudentDashboard();
@@ -1088,6 +1253,324 @@ function getSelectedDurationMinutes() {
 }
 
 /**
+ * 2B. STUDENT STUDY HUB (CLASS-SCOPED SUBJECTS -> TOPICS -> NOTES -> TOPIC QUIZ)
+ */
+function getActiveStudentClassForStudy() {
+  if (activeStudentProfile && activeStudentProfile.class_level) {
+    return normalizeClassCode(activeStudentProfile.class_level);
+  }
+  return normalizeClassCode(document.getElementById("candidate-class")?.value || "JSS 3");
+}
+
+function renderStudyHub() {
+  const cls = getActiveStudentClassForStudy();
+  const subjectsMap = SYLLABUS_DIRECTORY[cls] || {};
+  const subjectNames = Object.keys(subjectsMap);
+
+  const classPill = document.getElementById("study-class-pill");
+  const subtitleEl = document.getElementById("study-subtitle");
+  const grid = document.getElementById("study-subject-grid");
+  if (!grid) return;
+
+  if (classPill) classPill.textContent = `${cls} • Self-Paced Study Hub`;
+  if (subtitleEl) {
+    subtitleEl.textContent = activeStudentProfile
+      ? `Showing ${cls} subjects for ${activeStudentProfile.full_name}. Tap any subject to view its topics and study notes.`
+      : `Showing ${cls} subjects. Sign in on the Exam tab to lock to your profile class, or tap any subject below to study.`;
+  }
+
+  grid.innerHTML = "";
+  subjectNames.forEach(subject => {
+    const syllabusTopics = subjectsMap[subject] || [];
+    const notesForSubject = studyNotesCache.filter(
+      n => normalizeClassCode(n.classLevel) === cls && normalizeTextKey(n.subject) === normalizeTextKey(subject)
+    );
+    const qCount = questionCountsBySubject[`${cls}__${subject}`] || 0;
+
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "study-subject-card";
+    btn.onclick = () => openStudySubject(subject);
+    btn.innerHTML = `
+      <strong>${subject}</strong>
+      <span>${notesForSubject.length} Study Note${notesForSubject.length === 1 ? "" : "s"} Ready &bull; ${syllabusTopics.length} Topics</span>
+      <span style="color:var(--navy-primary); font-weight:700;">${qCount} Practice Qs in Bank &rarr;</span>
+    `;
+    grid.appendChild(btn);
+  });
+
+  document.getElementById("study-subjects-step")?.classList.remove("hidden");
+  document.getElementById("study-topics-panel")?.classList.add("hidden");
+  document.getElementById("study-note-reader")?.classList.add("hidden");
+}
+
+function openStudySubject(subject) {
+  const cls = getActiveStudentClassForStudy();
+  activeStudySubject = subject;
+
+  const badge = document.getElementById("study-active-subject-badge");
+  const list = document.getElementById("study-topics-list");
+  if (!list) return;
+
+  if (badge) badge.textContent = `${cls} • ${subject}`;
+
+  const syllabusTopics = (SYLLABUS_DIRECTORY[cls] && SYLLABUS_DIRECTORY[cls][subject]) || [];
+  const notesForSubject = studyNotesCache.filter(
+    n => normalizeClassCode(n.classLevel) === cls && normalizeTextKey(n.subject) === normalizeTextKey(subject)
+  );
+
+  // Merge syllabus topics + any extra custom topics saved in study_notes (case-insensitive)
+  const topicMap = new Map();
+  syllabusTopics.forEach(t => topicMap.set(normalizeTextKey(t), { label: t, note: null }));
+  notesForSubject.forEach(n => {
+    const key = normalizeTextKey(n.topic);
+    if (topicMap.has(key)) {
+      topicMap.get(key).note = n;
+    } else {
+      topicMap.set(key, { label: n.topic, note: n });
+    }
+  });
+
+  list.innerHTML = "";
+  Array.from(topicMap.values()).forEach(item => {
+    const hasNote = Boolean(item.note);
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = `study-topic-card ${hasNote ? "has-note" : ""}`;
+    btn.onclick = () => openStudyTopicNote(subject, item.label);
+    btn.innerHTML = `
+      <div class="study-topic-title">${item.label}</div>
+      <div class="study-topic-meta">
+        <span style="font-weight:700; color:${hasNote ? "var(--emerald)" : "var(--slate-600)"};">
+          ${hasNote ? "✓ Study Note Available" : "Topic Practice Ready"}
+        </span>
+        <span style="color:var(--navy-primary); font-weight:700;">Open &rarr;</span>
+      </div>
+    `;
+    list.appendChild(btn);
+  });
+
+  document.getElementById("study-subjects-step")?.classList.add("hidden");
+  document.getElementById("study-note-reader")?.classList.add("hidden");
+  document.getElementById("study-topics-panel")?.classList.remove("hidden");
+  scrollToTop();
+}
+
+function backToStudySubjects() {
+  document.getElementById("study-topics-panel")?.classList.add("hidden");
+  document.getElementById("study-note-reader")?.classList.add("hidden");
+  document.getElementById("study-subjects-step")?.classList.remove("hidden");
+}
+
+function backToStudyTopics() {
+  document.getElementById("floating-calculator")?.classList.add("hidden");
+  document.getElementById("study-note-reader")?.classList.add("hidden");
+  document.getElementById("study-topics-panel")?.classList.remove("hidden");
+}
+
+async function openStudyTopicNote(subject, topic) {
+  const cls = getActiveStudentClassForStudy();
+  activeStudySubject = subject;
+  activeStudyTopic = topic;
+
+  const matchedNote = studyNotesCache.find(
+    n => normalizeClassCode(n.classLevel) === cls &&
+      normalizeTextKey(n.subject) === normalizeTextKey(subject) &&
+      normalizeTextKey(n.topic) === normalizeTextKey(topic)
+  ) || null;
+  activeStudyNoteObj = matchedNote;
+
+  const subBadge = document.getElementById("reader-subject-badge");
+  const clsBadge = document.getElementById("reader-class-badge");
+  const titleEl = document.getElementById("reader-topic-title");
+  const bodyEl = document.getElementById("study-note-body");
+  const calcBtn = document.getElementById("study-calc-btn");
+  const videoWrap = document.getElementById("study-video-wrap");
+  const videoEmbed = document.getElementById("study-video-embed");
+  const qCountText = document.getElementById("study-topic-qcount-text");
+
+  if (subBadge) subBadge.textContent = subject;
+  if (clsBadge) clsBadge.textContent = cls;
+  if (titleEl) titleEl.textContent = topic;
+
+  // Toggleable Calculator for Mathematics notes
+  if (calcBtn) {
+    const isMath = normalizeTextKey(subject).includes("math");
+    calcBtn.classList.toggle("hidden", !isMath);
+  }
+
+  if (bodyEl) {
+    if (matchedNote) {
+      bodyEl.innerHTML = renderFormattedNoteContent(matchedNote.noteContent);
+    } else {
+      bodyEl.innerHTML = `
+        <p><strong>Study Note Coming Soon:</strong> Your teacher has not uploaded a written study note for <em>${topic}</em> yet.</p>
+        <p class="muted-small">You can still click <strong>"Take Exam on This Topic"</strong> below to practise any available questions for this topic directly from the database.</p>
+      `;
+    }
+  }
+
+  // Optional YouTube Video Walkthrough
+  if (videoWrap && videoEmbed) {
+    const embedUrl = matchedNote ? extractYouTubeEmbedUrl(matchedNote.videoUrl) : "";
+    if (embedUrl) {
+      videoEmbed.innerHTML = `
+        <div class="study-video-frame-wrap">
+          <iframe src="${embedUrl}" title="Topic Tutorial Video" allowfullscreen loading="lazy"></iframe>
+        </div>
+      `;
+      videoWrap.classList.remove("hidden");
+    } else {
+      videoEmbed.innerHTML = "";
+      videoWrap.classList.add("hidden");
+    }
+  }
+
+  document.getElementById("study-subjects-step")?.classList.add("hidden");
+  document.getElementById("study-topics-panel")?.classList.add("hidden");
+  document.getElementById("study-note-reader")?.classList.remove("hidden");
+  scrollToTop();
+
+  if (qCountText) qCountText.textContent = "Checking database for practice questions on this topic...";
+  try {
+    const topicQs = await fetchQuestionsForSingleTopic(cls, subject, topic);
+    if (qCountText) {
+      qCountText.textContent = topicQs.length > 0
+        ? `${topicQs.length} database question${topicQs.length === 1 ? "" : "s"} found strictly for "${topic}".`
+        : `No questions uploaded strictly for "${topic}" yet. Ask your teacher to upload a topic batch.`;
+    }
+  } catch (err) {
+    if (qCountText) qCountText.textContent = "Auto-fetch practice questions strictly from this topic.";
+  }
+}
+
+async function startTopicPracticeExam() {
+  const cls = getActiveStudentClassForStudy();
+  const subject = activeStudySubject;
+  const topic = activeStudyTopic;
+  if (!subject || !topic) return;
+
+  let fetchedPool = [];
+  try {
+    fetchedPool = await fetchQuestionsForSingleTopic(cls, subject, topic);
+  } catch (err) {
+    alert("Could not reach the database to fetch topic questions. Check your connection.");
+    return;
+  }
+
+  if (!fetchedPool || fetchedPool.length === 0) {
+    alert(`No practice questions have been uploaded yet for "${topic}" (${cls} ${subject}).`);
+    return;
+  }
+
+  const candidateName = activeStudentProfile
+    ? activeStudentProfile.full_name
+    : (document.getElementById("candidate-name")?.value || "").trim() || "Study Candidate";
+
+  const seenIdSet = getSeenQuestionIdSet(candidateName, "", cls);
+  const unseen = shuffleList(fetchedPool.filter(q => !seenIdSet.has(String(q.id))));
+  const seen = shuffleList(fetchedPool.filter(q => seenIdSet.has(String(q.id))));
+  const chosen = [...unseen, ...seen].slice(0, Math.min(30, fetchedPool.length)).map(q => shuffleQuestionOptions(q));
+
+  const durationSeconds = Math.max(600, chosen.length * 60);
+  lastStudiedContext = { subject, topic };
+
+  session = {
+    candidateName,
+    regNumber: "",
+    classLevel: cls,
+    subjects: [subject],
+    questionsPerSubject: chosen.length,
+    questionsBySubject: { [subject]: chosen },
+    activeSubject: subject,
+    currentIndexBySubject: { [subject]: 0 },
+    answers: {},
+    flagged: new Set(),
+    tabWarnings: 0,
+    durationSeconds,
+    secondsRemaining: durationSeconds,
+    timerInterval: null,
+    isTournament: false,
+    tournamentDivision: "",
+    tournamentStage: "",
+    tournamentTitle: "",
+    isCustomTournament: false,
+    customTournamentId: null,
+    isTopicPractice: true,
+    studiedSubject: subject,
+    studiedTopic: topic
+  };
+
+  clearSavedActiveSession();
+  enterLiveExamArena();
+}
+
+async function returnToStudiedTopicNote() {
+  if (!lastStudiedContext) {
+    switchPortalView("study");
+    return;
+  }
+  await switchPortalView("study");
+  openStudyTopicNote(lastStudiedContext.subject, lastStudiedContext.topic);
+}
+
+/**
+ * 2C. LIGHTWEIGHT ERROR / TYPO FLAGGING
+ */
+async function flagCurrentQuestion() {
+  const q = getActiveQuestionObject();
+  if (!q) return;
+  const reason = prompt(`Report a typo or wrong answer key for Q#${q.id} (${q.subject}):`);
+  if (!reason || !reason.trim()) return;
+
+  try {
+    const res = await fetch("/api/flags", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        itemType: "question",
+        itemId: Number(q.id) || 0,
+        classLevel: q.classLevel || session.classLevel,
+        subject: q.subject || session.activeSubject,
+        topic: q.topic || "",
+        reportedBy: activeStudentProfile ? activeStudentProfile.full_name : (session.candidateName || "Student"),
+        reason: reason.trim()
+      })
+    });
+    if (res.ok) alert("Thank you! Your report has been sent quietly to the Examiner Admin.");
+    else alert("Could not send report right now.");
+  } catch (err) {
+    alert("Network error while sending report.");
+  }
+}
+
+async function flagCurrentStudyNote() {
+  const cls = getActiveStudentClassForStudy();
+  const reason = prompt(`Report a typo or issue in the study note for "${activeStudyTopic}":`);
+  if (!reason || !reason.trim()) return;
+
+  try {
+    const res = await fetch("/api/flags", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        itemType: "note",
+        itemId: activeStudyNoteObj ? activeStudyNoteObj.id : 0,
+        classLevel: cls,
+        subject: activeStudySubject,
+        topic: activeStudyTopic,
+        reportedBy: activeStudentProfile ? activeStudentProfile.full_name : "Student",
+        reason: reason.trim()
+      })
+    });
+    if (res.ok) alert("Thank you! Your study note report has been sent to the Examiner Admin.");
+    else alert("Could not send report right now.");
+  } catch (err) {
+    alert("Network error while sending report.");
+  }
+}
+
+/**
  * 3. CANDIDATE LOBBY & STRICT SUBJECT POOL DISPLAY
  */
 function renderCandidateSubjects() {
@@ -1105,7 +1588,9 @@ function renderCandidateSubjects() {
     const countKey = `${classLevel}__${subject}`;
     const uploadedCount = questionCountsBySubject[countKey] !== undefined
       ? questionCountsBySubject[countKey]
-      : questionBank.filter(q => normalizeClassCode(q.classLevel) === classLevel && q.subject === subject).length;
+      : questionBank.filter(
+        q => normalizeClassCode(q.classLevel) === classLevel && normalizeTextKey(q.subject) === normalizeTextKey(subject)
+      ).length;
 
     const label = document.createElement("label");
     label.className = "subject-card-label";
@@ -1155,12 +1640,13 @@ function shuffleQuestionOptions(questionObj) {
 }
 
 /**
- * 4. SMART RESHUFFLE ENGINE (Prioritizes Unseen WAEC/JAMB/NECO Questions)
+ * 4. SMART RESHUFFLE ENGINE (Case-Insensitive Matching & Unseen Priority)
  */
 function buildSmartShuffledPool(sourceQuestions, classLevel, subject, desiredCount, seenIdSet) {
   const normClass = normalizeClassCode(classLevel);
+  const normSubject = normalizeTextKey(subject);
   const allSubjectQuestions = (sourceQuestions || []).filter(
-    q => normalizeClassCode(q.classLevel) === normClass && q.subject === subject
+    q => normalizeClassCode(q.classLevel) === normClass && normalizeTextKey(q.subject) === normSubject
   );
 
   const unseen = shuffleList(allSubjectQuestions.filter(q => !seenIdSet.has(String(q.id))));
@@ -1267,7 +1753,12 @@ async function startOfficialExam(event) {
     isTournament: false,
     tournamentDivision: "",
     tournamentStage: "",
-    tournamentTitle: ""
+    tournamentTitle: "",
+    isCustomTournament: false,
+    customTournamentId: null,
+    isTopicPractice: false,
+    studiedSubject: "",
+    studiedTopic: ""
   };
 
   clearSavedActiveSession();
@@ -1275,13 +1766,25 @@ async function startOfficialExam(event) {
 }
 
 /**
- * 4B. SCHOLARS SUPER CUP (WORLD CUP BRACKET, BRIEFING & EXAMINER CONTROL)
+ * 4B. SCHOLARS SUPER CUP (ALL-CLASS WORLD CUP) & CUSTOM TOURNAMENTS
  */
 const STAGE_LABELS = {
   qualifiers: "Stage 1: Class Qualifiers",
   playoffs: "Stage 2: Division Playoffs",
   finale: "Stage 3: Grand Finale"
 };
+
+function switchTournamentSubTab(tab) {
+  const wcBtn = document.getElementById("tourn-subtab-worldcup");
+  const ctBtn = document.getElementById("tourn-subtab-custom");
+  const wcPanel = document.getElementById("wc-all-class-panel");
+  const ctPanel = document.getElementById("wc-custom-panel");
+
+  if (wcBtn) wcBtn.className = tab === "worldcup" ? "btn-primary" : "btn-outline";
+  if (ctBtn) ctBtn.className = tab === "custom" ? "btn-primary" : "btn-outline";
+  if (wcPanel) wcPanel.classList.toggle("hidden", tab !== "worldcup");
+  if (ctPanel) ctPanel.classList.toggle("hidden", tab !== "custom");
+}
 
 function renderWorldCupBracket() {
   const data = tournamentBracketData || {};
@@ -1527,7 +2030,12 @@ async function confirmStartTournamentQuiz() {
     isTournament: true,
     tournamentDivision: division,
     tournamentStage: check.stage,
-    tournamentTitle: `${tournamentBracketData.cupName || "Scholars Super Cup"} (${STAGE_LABELS[check.stage]})`
+    tournamentTitle: `${tournamentBracketData.cupName || "Scholars Super Cup"} (${STAGE_LABELS[check.stage]})`,
+    isCustomTournament: false,
+    customTournamentId: null,
+    isTopicPractice: false,
+    studiedSubject: "",
+    studiedTopic: ""
   };
 
   clearSavedActiveSession();
@@ -1566,6 +2074,158 @@ function renderTournamentStandings() {
     `;
     tbody.appendChild(tr);
   });
+}
+
+function renderCustomTournaments() {
+  const container = document.getElementById("custom-tournaments-list");
+  if (!container) return;
+
+  if (!customTournamentsData || customTournamentsData.length === 0) {
+    container.innerHTML = `<p class="muted-small">No custom tournaments have been created by the Examiner yet.</p>`;
+    return;
+  }
+
+  container.innerHTML = customTournamentsData.map(t => {
+    const modeLabel = t.mode === "two_class"
+      ? `Two-Class Match: ${t.classA} vs ${t.classB}`
+      : `1-on-1 Head-to-Head: ${t.playerAName} vs ${t.playerBName}`;
+    const statusPill = t.isOpen
+      ? `<span class="pill-tag" style="background:#ecfdf5; color:#059669; border-color:#34d399;">OPEN</span>`
+      : `<span class="pill-tag" style="background:#fef2f2; color:#dc2626; border-color:#fca5a5;">CLOSED</span>`;
+
+    const winnerHtml = t.winner
+      ? `<div class="custom-tourn-winner">🏆 Current Leader / Winner: ${t.winner.studentName} (${t.winner.classLevel}) — ${t.winner.pointsEarned} pts (${t.winner.percentage}%, ${t.winner.timeTakenSeconds}s)</div>`
+      : `<div class="muted-small">No official submissions recorded for this match yet.</div>`;
+
+    const entriesRows = (t.entries || []).map((e, idx) => `
+      <tr>
+        <td><span class="rank-badge ${idx === 0 ? "rank-1" : ""}">#${idx + 1}</span></td>
+        <td><strong>${e.studentName}</strong></td>
+        <td>${e.classLevel}</td>
+        <td><strong>${e.percentage}%</strong> (${e.correct}/${e.total})</td>
+        <td>${e.timeTakenSeconds}s (+${e.speedBonus} pts)</td>
+        <td style="color:#1E3A8A; font-weight:800;">${e.pointsEarned} pts</td>
+      </tr>
+    `).join("");
+
+    return `
+      <div class="custom-tourn-card">
+        <div class="custom-tourn-header">
+          <div>
+            <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:6px;">
+              ${statusPill}
+              <span class="topic-badge">${modeLabel}</span>
+            </div>
+            <h3 style="color:var(--navy-dark);">${t.title}</h3>
+          </div>
+          ${t.isOpen
+            ? `<button type="button" class="btn-primary" onclick="startCustomTournamentQuiz(${t.id})">Join Match &rarr;</button>`
+            : `<button type="button" class="btn-outline" disabled>Closed</button>`
+          }
+        </div>
+        ${winnerHtml}
+        ${entriesRows ? `
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr><th>Rank</th><th>Candidate</th><th>Class</th><th>Accuracy</th><th>Time / Speed</th><th>Total Points</th></tr>
+              </thead>
+              <tbody>${entriesRows}</tbody>
+            </table>
+          </div>
+        ` : ""}
+      </div>
+    `;
+  }).join("");
+}
+
+async function startCustomTournamentQuiz(tournamentId) {
+  const t = (customTournamentsData || []).find(item => Number(item.id) === Number(tournamentId));
+  if (!t || !t.isOpen) {
+    alert("This custom tournament is currently closed.");
+    return;
+  }
+  if (!activeStudentProfile) {
+    alert("Please sign in on the Exam tab first to compete in a Custom Tournament.");
+    switchPortalView("student");
+    return;
+  }
+
+  const myClass = normalizeClassCode(activeStudentProfile.class_level);
+  const myName = normalizePersonName(activeStudentProfile.full_name);
+
+  if (t.mode === "two_class" && myClass !== t.classA && myClass !== t.classB) {
+    alert(`This Two-Class Match is strictly for ${t.classA} and ${t.classB}.`);
+    return;
+  }
+  if (t.mode === "one_on_one" && myName !== normalizePersonName(t.playerAName) && myName !== normalizePersonName(t.playerBName)) {
+    alert(`This 1-on-1 match is strictly between ${t.playerAName} and ${t.playerBName}.`);
+    return;
+  }
+
+  const alreadyPlayed = (t.entries || []).some(e => Number(e.studentId) === Number(activeStudentProfile.id));
+  if (alreadyPlayed) {
+    alert("You have already completed this custom tournament match.");
+    return;
+  }
+
+  // Strictly pull questions for THIS student's own class level
+  const availableSubjects = Object.keys(SYLLABUS_DIRECTORY[myClass] || {});
+  const selectedSubjects = availableSubjects.slice(0, 3);
+  const questionsPerSubject = 10;
+  const durationMins = 15;
+
+  let fetchedPool = [];
+  try {
+    fetchedPool = await fetchQuestionsForSubjects(myClass, selectedSubjects);
+  } catch (err) {
+    alert("Could not load class-specific questions from server.");
+    return;
+  }
+
+  const seenIdSet = getSeenQuestionIdSet(activeStudentProfile.full_name, "", myClass);
+  const questionsBySubject = {};
+  const currentIndexBySubject = {};
+  selectedSubjects.forEach(subject => {
+    questionsBySubject[subject] = buildSmartShuffledPool(
+      fetchedPool,
+      myClass,
+      subject,
+      questionsPerSubject,
+      seenIdSet
+    );
+    currentIndexBySubject[subject] = 0;
+  });
+
+  const totalSeconds = durationMins * 60;
+  session = {
+    candidateName: activeStudentProfile.full_name,
+    regNumber: "",
+    classLevel: myClass,
+    subjects: selectedSubjects,
+    questionsPerSubject,
+    questionsBySubject,
+    activeSubject: selectedSubjects[0],
+    currentIndexBySubject,
+    answers: {},
+    flagged: new Set(),
+    tabWarnings: 0,
+    durationSeconds: totalSeconds,
+    secondsRemaining: totalSeconds,
+    timerInterval: null,
+    isTournament: false,
+    tournamentDivision: "",
+    tournamentStage: "",
+    tournamentTitle: `Custom Match: ${t.title}`,
+    isCustomTournament: true,
+    customTournamentId: t.id,
+    isTopicPractice: false,
+    studiedSubject: "",
+    studiedTopic: ""
+  };
+
+  clearSavedActiveSession();
+  enterLiveExamArena();
 }
 
 function syncAdminTournamentControls() {
@@ -1637,9 +2297,13 @@ function enterLiveExamArena() {
   const examView = document.getElementById("view-exam");
 
   if (liveName) {
-    liveName.textContent = session.isTournament
-      ? `${session.candidateName} (${session.tournamentTitle})`
-      : session.candidateName;
+    if (session.isTournament || session.isCustomTournament) {
+      liveName.textContent = `${session.candidateName} (${session.tournamentTitle})`;
+    } else if (session.isTopicPractice) {
+      liveName.textContent = `${session.candidateName} (Topic: ${session.studiedTopic})`;
+    } else {
+      liveName.textContent = session.candidateName;
+    }
   }
   if (regBadge) {
     if (session.regNumber) {
@@ -1897,7 +2561,7 @@ function promptExamSubmission() {
 }
 
 /**
- * 5. SCORE COMPUTATION & IMMEDIATE DATABASE UPLOAD
+ * 5. SCORE COMPUTATION & IMMEDIATE DATABASE UPLOAD (LEADERBOARD PROTECTED)
  */
 async function postExamRecordImmediately(payload) {
   for (let attempt = 0; attempt < 3; attempt++) {
@@ -2018,6 +2682,7 @@ async function computeAndSaveResults() {
     alert("Network unstable: Your score has been queued and will sync automatically to the database once connection returns.");
   }
 
+  // All-Class World Cup Tournament submission
   if (session.isTournament && activeStudentProfile) {
     const timeTakenSeconds = Math.max(1, (session.durationSeconds || 900) - (session.secondsRemaining || 0));
     const speedBonus = percentage >= 50
@@ -2038,6 +2703,32 @@ async function computeAndSaveResults() {
           total: totalQuestions,
           percentage,
           pointsEarned: totalTournamentPoints,
+          timeTakenSeconds,
+          speedBonus
+        })
+      });
+    } catch (err) {}
+  }
+
+  // Custom Tournament submission (Speed + Accuracy tie-breaker)
+  if (session.isCustomTournament && session.customTournamentId && activeStudentProfile) {
+    const timeTakenSeconds = Math.max(1, (session.durationSeconds || 900) - (session.secondsRemaining || 0));
+    const speedBonus = percentage >= 50
+      ? Math.round(((session.secondsRemaining || 0) / Math.max(1, session.durationSeconds || 900)) * 20)
+      : 0;
+    const totalCustomPoints = pointsEarned + speedBonus;
+
+    try {
+      await fetch(`/api/custom-tournaments/${session.customTournamentId}/entries`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          studentId: activeStudentProfile.id,
+          subjects: session.subjects,
+          correct: totalCorrect,
+          total: totalQuestions,
+          percentage,
+          pointsEarned: totalCustomPoints,
           timeTakenSeconds,
           speedBonus
         })
@@ -2067,6 +2758,7 @@ async function computeAndSaveResults() {
   const pointsEl = document.getElementById("result-points-earned");
   const streakEl = document.getElementById("result-streak-value");
   const remarkEl = document.getElementById("result-grade-remark");
+  const rereadBtn = document.getElementById("btn-reread-note");
 
   if (headingEl) headingEl.textContent = `${session.candidateName}${regSuffix} — Score Report`;
   if (subheadingEl) subheadingEl.textContent = `${session.classLevel} • ${session.subjects.join(", ")} • Saved on ${savedRecord.date}`;
@@ -2075,6 +2767,9 @@ async function computeAndSaveResults() {
   if (pointsEl) pointsEl.textContent = `+${pointsEarned} pts`;
   if (streakEl) streakEl.textContent = `${liveStreak}-Day Streak 🔥`;
   if (remarkEl) remarkEl.textContent = gradeRemark;
+  if (rereadBtn) {
+    rereadBtn.classList.toggle("hidden", !session.isTopicPractice);
+  }
 
   renderScriptCorrections();
 
@@ -2316,8 +3011,238 @@ function renderClassLeaderboard() {
 }
 
 /**
- * 7. ADMIN MONITOR, WEAK-TOPIC ANALYTICS, BULK CSV & BROADSHEET EXPORT
+ * 7. ADMIN CONTROLS: CUSTOM TOURNAMENTS, STUDY NOTES BUNDLE, FLAGS, CSV & ANALYTICS
  */
+function toggleCustomTournamentFields() {
+  const mode = document.getElementById("ct-mode")?.value || "two_class";
+  document.querySelectorAll(".ct-two-class-field").forEach(el => el.classList.toggle("hidden", mode !== "two_class"));
+  document.querySelectorAll(".ct-one-on-one-field").forEach(el => el.classList.toggle("hidden", mode !== "one_on_one"));
+}
+
+async function handleCreateCustomTournament(event) {
+  event.preventDefault();
+  const title = (document.getElementById("ct-title")?.value || "").trim();
+  const mode = document.getElementById("ct-mode")?.value || "two_class";
+  const classA = document.getElementById("ct-class-a")?.value || "";
+  const classB = document.getElementById("ct-class-b")?.value || "";
+  const playerAName = (document.getElementById("ct-player-a")?.value || "").trim();
+  const playerBName = (document.getElementById("ct-player-b")?.value || "").trim();
+
+  try {
+    const res = await fetch("/api/custom-tournaments", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title, mode, classA, classB, playerAName, playerBName })
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      alert(data.error || "Could not create custom tournament.");
+      return;
+    }
+    document.getElementById("admin-custom-tourn-form")?.reset();
+    toggleCustomTournamentFields();
+    await syncRecordsAndBracketFromServer();
+    renderAdminCustomTournaments();
+    alert("Custom tournament created and opened!");
+  } catch (err) {
+    alert("Server error while creating custom tournament.");
+  }
+}
+
+function renderAdminCustomTournaments() {
+  const container = document.getElementById("admin-custom-tournaments-list");
+  if (!container) return;
+
+  if (!customTournamentsData || customTournamentsData.length === 0) {
+    container.innerHTML = `<p class="muted-small">No custom tournaments created yet.</p>`;
+    return;
+  }
+
+  container.innerHTML = customTournamentsData.map(t => {
+    const detail = t.mode === "two_class" ? `${t.classA} vs ${t.classB}` : `${t.playerAName} vs ${t.playerBName}`;
+    return `
+      <div class="script-item">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+          <div>
+            <strong>${t.title}</strong> <span class="topic-badge">${detail}</span>
+            <span class="muted-small">(${(t.entries || []).length} submissions)</span>
+          </div>
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <button type="button" class="btn-outline" onclick="toggleCustomTournamentStatus(${t.id}, ${!t.isOpen})">
+              ${t.isOpen ? "⏸ Close" : "▶ Reopen"}
+            </button>
+            <button type="button" class="btn-danger-sm" onclick="deleteCustomTournament(${t.id})">Delete</button>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+async function toggleCustomTournamentStatus(id, isOpen) {
+  try {
+    await fetch(`/api/custom-tournaments/${id}/toggle`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ isOpen })
+    });
+    await syncRecordsAndBracketFromServer();
+    renderAdminCustomTournaments();
+  } catch (err) {}
+}
+
+async function deleteCustomTournament(id) {
+  if (!confirm("Delete this custom tournament and all its entries?")) return;
+  try {
+    await fetch(`/api/custom-tournaments/${id}`, { method: "DELETE" });
+    await syncRecordsAndBracketFromServer();
+    renderAdminCustomTournaments();
+  } catch (err) {}
+}
+
+function syncAdminNoteSubjects() {
+  const classEl = document.getElementById("note-class-select");
+  const subEl = document.getElementById("note-subject-select");
+  if (!classEl || !subEl) return;
+
+  const cls = normalizeClassCode(classEl.value);
+  const subjects = Object.keys(SYLLABUS_DIRECTORY[cls] || {});
+  subEl.innerHTML = subjects.map(s => `<option value="${s}">${s}</option>`).join("");
+  syncAdminNoteTopics();
+}
+
+function syncAdminNoteTopics() {
+  const classEl = document.getElementById("note-class-select");
+  const subEl = document.getElementById("note-subject-select");
+  const topicEl = document.getElementById("note-topic-select");
+  if (!classEl || !subEl || !topicEl) return;
+
+  const cls = normalizeClassCode(classEl.value);
+  const subject = subEl.value;
+  const topics = (SYLLABUS_DIRECTORY[cls] && SYLLABUS_DIRECTORY[cls][subject]) || [];
+  topicEl.innerHTML = topics.map(t => `<option value="${t}">${t}</option>`).join("");
+}
+
+async function handleAdminStudyBundleSave(event) {
+  event.preventDefault();
+  const classLevel = normalizeClassCode(document.getElementById("note-class-select")?.value || "JSS 3");
+  const subject = document.getElementById("note-subject-select")?.value || "";
+  const customTopic = (document.getElementById("note-custom-topic")?.value || "").trim();
+  const topic = customTopic || document.getElementById("note-topic-select")?.value || "";
+  const videoUrl = (document.getElementById("note-video-url")?.value || "").trim();
+  const noteContent = (document.getElementById("note-content-input")?.value || "").trim();
+  const questionsCsv = (document.getElementById("note-bundle-csv")?.value || "").trim();
+
+  if (!subject || !topic || !noteContent) {
+    alert("Please select a subject, topic, and enter the study note content.");
+    return;
+  }
+
+  try {
+    const res = await fetch("/api/study-notes/bundle", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ classLevel, subject, topic, videoUrl, noteContent, questionsCsv })
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      alert(data.error || "Could not save study note bundle.");
+      return;
+    }
+
+    ["note-custom-topic", "note-video-url", "note-content-input", "note-bundle-csv"].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.value = "";
+    });
+
+    await syncFromServer(true);
+    renderAdminNotesList();
+    renderAdminRepository();
+    renderAdminMonitor();
+    renderCandidateSubjects();
+
+    const qSummary = questionsCsv
+      ? `\nBundled Questions: ${data.inserted} imported, ${data.duplicates} duplicates skipped, ${data.skipped} invalid skipped.`
+      : "";
+    alert(`Study note saved for ${classLevel} ${subject} — ${topic}!${qSummary}`);
+  } catch (err) {
+    alert("Server error while saving study note bundle.");
+  }
+}
+
+function renderAdminNotesList() {
+  const countEl = document.getElementById("admin-notes-count");
+  const listEl = document.getElementById("admin-notes-list");
+  if (!listEl) return;
+
+  if (countEl) countEl.textContent = studyNotesCache.length;
+  if (studyNotesCache.length === 0) {
+    listEl.innerHTML = `<p class="muted-small">No study notes uploaded yet.</p>`;
+    return;
+  }
+
+  listEl.innerHTML = studyNotesCache.slice().reverse().map(n => `
+    <div class="script-item">
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+        <div>
+          <strong>${n.classLevel} • ${n.subject}</strong>
+          <span class="topic-badge">${n.topic}</span>
+          ${n.videoUrl ? `<span class="source-badge">▶ Video Linked</span>` : ""}
+        </div>
+        <button type="button" class="btn-danger-sm" onclick="deleteStudyNote(${n.id})">Delete Note</button>
+      </div>
+    </div>
+  `).join("");
+}
+
+async function deleteStudyNote(noteId) {
+  if (!confirm("Delete this study note permanently?")) return;
+  try {
+    await fetch(`/api/study-notes/${noteId}`, { method: "DELETE" });
+    await syncRecordsAndBracketFromServer();
+    renderAdminNotesList();
+  } catch (err) {}
+}
+
+function renderAdminFlagsList() {
+  const countEl = document.getElementById("admin-flags-count");
+  const listEl = document.getElementById("admin-flags-list");
+  if (!listEl) return;
+
+  const openFlags = (adminFlagsCache || []).filter(f => f.status === "open");
+  if (countEl) countEl.textContent = openFlags.length;
+
+  if (!adminFlagsCache || adminFlagsCache.length === 0) {
+    listEl.innerHTML = `<p class="muted-small">No typos or errors reported yet.</p>`;
+    return;
+  }
+
+  listEl.innerHTML = adminFlagsCache.map(f => `
+    <div class="script-item ${f.status === "resolved" ? "correct" : "wrong"}">
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:4px;">
+        <div>
+          <strong>[${f.itemType.toUpperCase()} #${f.itemId}] ${f.classLevel} • ${f.subject}</strong>
+          ${f.topic ? `<span class="topic-badge">${f.topic}</span>` : ""}
+        </div>
+        ${f.status === "open"
+          ? `<button type="button" class="btn-outline" onclick="resolveErrorFlag(${f.id})">✓ Mark Resolved</button>`
+          : `<span class="text-success" style="font-weight:700;">Resolved</span>`
+        }
+      </div>
+      <p style="font-size:0.9rem;"><strong>Report:</strong> ${renderFormattedPrompt(f.reason)}</p>
+      <small class="muted-small">Reported by ${f.reportedBy}</small>
+    </div>
+  `).join("");
+}
+
+async function resolveErrorFlag(flagId) {
+  try {
+    await fetch(`/api/flags/${flagId}/resolve`, { method: "POST" });
+    await loadAllQuestionsForAdmin();
+    renderAdminFlagsList();
+  } catch (err) {}
+}
+
 function renderAdminMonitor() {
   const attemptsEl = document.getElementById("admin-kpi-attempts");
   const candidatesEl = document.getElementById("admin-kpi-candidates");
@@ -2464,11 +3389,14 @@ async function sendCSVFormData(formData, onSuccessClear) {
     questionBank = data.questions || questionBank;
     totalServerQuestionCount = questionBank.length;
     if (onSuccessClear) onSuccessClear();
+    await syncRecordsAndBracketFromServer();
     syncAdminTopicDropdown();
     renderAdminRepository();
     renderAdminMonitor();
     renderCandidateSubjects();
-    alert(`Successfully imported ${data.inserted} questions!`);
+    alert(
+      `Import Complete:\n• ${data.inserted || 0} new question(s) imported\n• ${data.duplicates || 0} duplicate(s) skipped\n• ${data.skipped || 0} incomplete row(s) skipped`
+    );
   } catch (err) {
     alert(`Connection failed (${err.message}). Make sure Flask is running.`);
   }
@@ -2616,7 +3544,7 @@ function closeDiagramModal() {
 }
 
 /**
- * 9. ADMIN QUESTION UPLOADER & TOPIC DIRECTORY (250-QUESTION TARGET)
+ * 9. ADMIN QUESTION UPLOADER & TOPIC DIRECTORY (1,000-QUESTION TARGET)
  */
 function syncAdminSubjectDropdown() {
   const classEl = document.getElementById("admin-class-select");
@@ -2651,7 +3579,9 @@ function syncAdminTopicDropdown() {
 
   topics.forEach(topic => {
     const countForTopic = questionBank.filter(
-      q => normalizeClassCode(q.classLevel) === classLevel && q.subject === subject && q.topic === topic
+      q => normalizeClassCode(q.classLevel) === classLevel &&
+        normalizeTextKey(q.subject) === normalizeTextKey(subject) &&
+        normalizeTextKey(q.topic) === normalizeTextKey(topic)
     ).length;
 
     const opt = document.createElement("option");
@@ -2669,7 +3599,8 @@ function renderAdminTopicPills(classLevel, subject, topics) {
   if (!progressEl || !pillsContainer) return;
 
   const totalForSubject = questionBank.filter(
-    q => normalizeClassCode(q.classLevel) === classLevel && q.subject === subject
+    q => normalizeClassCode(q.classLevel) === classLevel &&
+      normalizeTextKey(q.subject) === normalizeTextKey(subject)
   ).length;
   progressEl.textContent =
     `${classLevel} → ${subject} (${totalForSubject} / ${MAX_QUESTIONS_PER_SUBJECT} Questions Uploaded)`;
@@ -2679,7 +3610,9 @@ function renderAdminTopicPills(classLevel, subject, topics) {
 
   topics.forEach(topic => {
     const count = questionBank.filter(
-      q => normalizeClassCode(q.classLevel) === classLevel && q.subject === subject && q.topic === topic
+      q => normalizeClassCode(q.classLevel) === classLevel &&
+        normalizeTextKey(q.subject) === normalizeTextKey(subject) &&
+        normalizeTextKey(q.topic) === normalizeTextKey(topic)
     ).length;
 
     const pill = document.createElement("button");
@@ -2770,6 +3703,7 @@ async function handleAdminQuestionSave(event) {
   });
   clearAdminDiagramInput();
 
+  await syncRecordsAndBracketFromServer();
   syncAdminTopicDropdown();
   const topicSelect = document.getElementById("admin-topic-select");
   if (topicSelect) topicSelect.value = selectedTopic;
@@ -2833,6 +3767,7 @@ async function removeQuestionFromBank(id) {
   } catch (err) {}
   questionBank = questionBank.filter(q => q.id !== id);
   totalServerQuestionCount = questionBank.length;
+  await syncRecordsAndBracketFromServer();
   syncAdminTopicDropdown();
   renderAdminRepository();
   renderAdminMonitor();
@@ -2866,6 +3801,7 @@ function restoreQuestionBankBackup(event) {
         if (res.ok) {
           questionBank = await res.json();
           totalServerQuestionCount = questionBank.length;
+          await syncRecordsAndBracketFromServer();
           syncAdminTopicDropdown();
           renderAdminRepository();
           renderAdminMonitor();
