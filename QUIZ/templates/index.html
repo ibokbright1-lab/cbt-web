@@ -16,7 +16,7 @@
           <span class="brand-badge">CBT</span>
           <div class="brand-text">
             <h1>Scholars Standard Examination Portal</h1>
-            <p>JSS 1 – SSS 3 WAEC, NECO &amp; JAMB Smart CBT System</p>
+            <p>JSS 1 – SSS 3 WAEC, NECO &amp; JAMB Smart CBT &amp; Study Hub</p>
           </div>
         </div>
 
@@ -53,9 +53,9 @@
          ========================================================= -->
     <section id="view-lobby" class="card view-section active">
       <div class="card-header">
-        <span class="pill-tag">WAEC • JAMB • NECO Past Questions • 250-Question Smart Pool</span>
+        <span class="pill-tag">WAEC • JAMB • NECO Past Questions • 1,000-Question Smart Pool</span>
         <h2>Candidate Registration, Question Count &amp; Duration Setup</h2>
-        <p>Sign in with your school, class, full name, and 4-digit PIN, then choose your question count (up to 250), duration, and subjects.</p>
+        <p>Sign in with your school, class, full name, and 4-digit PIN, then choose your question count, duration, and subjects.</p>
       </div>
 
       <!-- Manual Profile Sign-In / Registration Gate -->
@@ -63,7 +63,7 @@
         <div class="auth-gate-header">
           <div>
             <h3>Student Profile Verification (School + Name + 4-Digit PIN)</h3>
-            <p class="muted-small">Sign in with your exact registered name and 4-digit PIN to unlock your personal dashboard, tournaments, and class leaderboard.</p>
+            <p class="muted-small">Sign in with your registered name (case-insensitive) and your exact 4-digit PIN to unlock Study Mode, tournaments, and the class leaderboard.</p>
           </div>
           <div class="auth-mode-tabs">
             <button type="button" id="tab-auth-login" class="btn-primary" onclick="setAuthMode('login')">Sign In</button>
@@ -136,8 +136,8 @@
               <option value="60">60 Questions / Subject (Standard JAMB)</option>
               <option value="100">100 Questions / Subject</option>
               <option value="150">150 Questions / Subject</option>
-              <option value="250">250 Questions / Subject (Full Bank)</option>
-              <option value="CUSTOM">Custom Count (5–250)</option>
+              <option value="250">250 Questions / Subject</option>
+              <option value="CUSTOM">Custom Count (5–1000)</option>
             </select>
           </div>
 
@@ -156,8 +156,8 @@
 
         <div class="form-grid" style="margin-top: 14px;">
           <div id="custom-qcount-row" class="form-group hidden">
-            <label for="custom-qcount-input">Custom Questions Per Subject (5–250)</label>
-            <input type="number" id="custom-qcount-input" min="5" max="250" value="25" oninput="refreshSelectedSubjectCounter()" />
+            <label for="custom-qcount-input">Custom Questions Per Subject (5–1000)</label>
+            <input type="number" id="custom-qcount-input" min="5" max="1000" value="25" oninput="refreshSelectedSubjectCounter()" />
           </div>
 
           <div id="custom-duration-row" class="form-group hidden">
@@ -171,7 +171,7 @@
           <div class="subject-box-header">
             <div>
               <h3>Tick Subjects for This Session</h3>
-              <p class="muted-small">Smart Reshuffle automatically serves fresh unseen WAEC/JAMB/NECO questions on every retake.</p>
+              <p class="muted-small">Smart Reshuffle automatically serves fresh unseen WAEC/JAMB/NECO questions directly from the database on every retake.</p>
             </div>
             <span id="selected-subjects-pill" class="pill-tag">0 Subjects Selected</span>
           </div>
@@ -181,7 +181,7 @@
         <div class="exam-instructions">
           <h4>Examination Rules, Smart Reshuffle &amp; Integrity Guard</h4>
           <ul>
-            <li><strong>Smart Reshuffle:</strong> Retaking an exam prioritizes unseen questions from the 250-question pool so you don't get the exact same set repeatedly.</li>
+            <li><strong>Smart Reshuffle:</strong> Retaking an exam prioritizes unseen questions from the 1,000-question pool so you don't get the exact same set repeatedly.</li>
             <li><strong>JAMB Keyboard Keys:</strong> Press <strong>A–D</strong> to answer, <strong>N</strong> for Next, <strong>P</strong> for Previous, <strong>R</strong> to clear/reverse your choice, and <strong>S</strong> to submit.</li>
             <li><strong>Integrity &amp; Auto-Save:</strong> Switching browser tabs/windows during an exam logs a warning (<strong>3 warnings auto-submit</strong>). Progress auto-saves every 5 seconds.</li>
           </ul>
@@ -191,6 +191,75 @@
           <button type="submit" class="btn-primary btn-block">Start Examination Now &rarr;</button>
         </div>
       </form>
+    </section>
+
+    <!-- =========================================================
+         VIEW 1B: STUDENT STUDY HUB (CLASS-SCOPED NOTES & TOPIC QUIZZES)
+         ========================================================= -->
+    <section id="view-study" class="view-section">
+      <div class="card">
+        <div class="section-split-header">
+          <div>
+            <span class="pill-tag" id="study-class-pill">Self-Paced Study Hub</span>
+            <h2 style="color: var(--navy-primary); margin-top: 6px;">Study Notes &amp; Topic Practice</h2>
+            <p class="muted-small" id="study-subtitle">Tap any subject for your class to browse its topics, read clear study notes, and launch a topic-specific practice exam.</p>
+          </div>
+        </div>
+
+        <!-- Step 1: Class-Scoped Subjects Grid -->
+        <div id="study-subjects-step">
+          <h3 style="color: var(--navy-dark); font-size: 1.02rem; margin-bottom: 12px;">1. Select a Subject</h3>
+          <div id="study-subject-grid" class="study-subject-grid"></div>
+        </div>
+
+        <!-- Step 2: Topics List for Selected Subject -->
+        <div id="study-topics-panel" class="study-topics-panel hidden">
+          <div class="section-split-header" style="margin-bottom: 14px;">
+            <div>
+              <span class="pill-tag" id="study-active-subject-badge">Subject</span>
+              <h3 style="color: var(--navy-primary); margin-top: 6px;">Available Topics</h3>
+            </div>
+            <button type="button" class="btn-outline" onclick="backToStudySubjects()">&larr; All Subjects</button>
+          </div>
+          <div id="study-topics-list" class="study-topics-grid"></div>
+        </div>
+
+        <!-- Step 3: Clean Study Note Reader -->
+        <div id="study-note-reader" class="study-note-reader hidden">
+          <div class="study-reader-topbar">
+            <div class="badge-group">
+              <span class="subject-badge" id="reader-subject-badge">Subject</span>
+              <span class="topic-badge" id="reader-class-badge">Class</span>
+            </div>
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+              <button type="button" id="study-calc-btn" class="btn-amber hidden" onclick="toggleCalculator()">🧮 Show Calculator</button>
+              <button type="button" class="btn-outline" onclick="flagCurrentStudyNote()">🚩 Report Typo</button>
+              <button type="button" class="btn-outline" onclick="backToStudyTopics()">&larr; Back to Topics</button>
+            </div>
+          </div>
+
+          <h2 id="reader-topic-title" class="study-note-title">Topic Title</h2>
+
+          <div id="study-note-body" class="study-note-body"></div>
+
+          <!-- Optional YouTube Tutorial Video Block -->
+          <div id="study-video-wrap" class="study-video-box hidden">
+            <h4 style="color: var(--navy-primary); margin-bottom: 8px;">▶ Watch Tutorial Walkthrough</h4>
+            <div id="study-video-embed"></div>
+          </div>
+
+          <!-- Auto-Fetch Topic Practice CTA -->
+          <div class="study-practice-cta">
+            <div>
+              <strong style="color: var(--navy-dark); font-size: 1.04rem;">Ready to test your understanding?</strong>
+              <p class="muted-small" id="study-topic-qcount-text">Auto-fetch practice questions strictly from this topic.</p>
+            </div>
+            <button type="button" class="btn-primary" onclick="startTopicPracticeExam()">
+              Take Exam on This Topic &rarr;
+            </button>
+          </div>
+        </div>
+      </div>
     </section>
 
     <!-- =========================================================
@@ -242,7 +311,10 @@
             <span id="live-source-badge" class="source-badge">WAEC/JAMB/NECO</span>
             <span id="live-topic-badge" class="topic-badge">Topic</span>
           </div>
-          <span id="live-q-number" class="q-counter">Question 1 of 15</span>
+          <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+            <button type="button" class="btn-flag-sm" onclick="flagCurrentQuestion()" title="Report a typo or wrong answer key">🚩 Report typo</button>
+            <span id="live-q-number" class="q-counter">Question 1 of 15</span>
+          </div>
         </div>
 
         <div id="question-content-grid" class="question-layout">
@@ -324,6 +396,7 @@
         </div>
 
         <div class="result-action-row">
+          <button type="button" id="btn-reread-note" class="btn-amber hidden" onclick="returnToStudiedTopicNote()">📖 Re-read Topic Note</button>
           <button type="button" class="btn-outline" onclick="switchPortalView('dashboard')">View Personal Dashboard</button>
           <button type="button" class="btn-outline" onclick="switchPortalView('leaderboard')">View Leaderboard</button>
           <button type="button" class="btn-primary" onclick="resetToCandidateLobby()">Take Another Exam</button>
@@ -389,10 +462,23 @@
     </section>
 
     <!-- =========================================================
-         VIEW 5: SCHOLARS SUPER CUP (WORLD CUP TOURNAMENT BRACKET)
+         VIEW 5: TOURNAMENTS (ALL-CLASS WORLD CUP + CUSTOM TOURNAMENTS)
          ========================================================= -->
     <section id="view-tournaments" class="view-section">
-      <div class="card">
+      <!-- Tournament Mode Switcher -->
+      <div class="card" style="padding: 14px 18px; margin-bottom: 16px;">
+        <div class="tournament-mode-tabs">
+          <button type="button" id="tourn-subtab-worldcup" class="btn-primary" onclick="switchTournamentSubTab('worldcup')">
+            🏆 All-Class World Cup
+          </button>
+          <button type="button" id="tourn-subtab-custom" class="btn-outline" onclick="switchTournamentSubTab('custom')">
+            ⚔️ Custom Tournaments (2-Class &amp; 1-on-1)
+          </button>
+        </div>
+      </div>
+
+      <!-- PATH A: EXISTING ALL-CLASS WORLD CUP (100% PRESERVED) -->
+      <div id="wc-all-class-panel" class="card">
         <!-- Hero Banner + Live Status -->
         <div class="wc-hero-banner">
           <div>
@@ -514,6 +600,18 @@
           </table>
         </div>
       </div>
+
+      <!-- PATH B: CUSTOM TOURNAMENTS (TWO-CLASS & 1-ON-1 HEAD-TO-HEAD) -->
+      <div id="wc-custom-panel" class="card hidden">
+        <div class="section-split-header">
+          <div>
+            <span class="pill-tag">Class-Matched Fair Play • Speed + Accuracy Tie-Breaker</span>
+            <h2 style="color: var(--navy-primary); margin-top: 6px;">Custom Tournaments (Two-Class &amp; 1-on-1)</h2>
+            <p class="muted-small">Every contestant answers questions strictly from their own class level. Faster accurate finishes break ties.</p>
+          </div>
+        </div>
+        <div id="custom-tournaments-list" class="custom-tournaments-stack"></div>
+      </div>
     </section>
 
     <!-- =========================================================
@@ -623,13 +721,149 @@
         </div>
       </div>
 
+      <!-- Examiner-Only Custom Tournament Creator (2-Class & 1-on-1) -->
+      <div class="card">
+        <div class="section-split-header">
+          <div>
+            <span class="pill-tag">Examiner Only • Custom Matches</span>
+            <h3 style="color: var(--navy-primary); margin-top: 6px;">Create Custom Tournament (Two-Class or 1-on-1)</h3>
+            <p class="muted-small">Each candidate automatically receives questions pulled strictly from their own class level.</p>
+          </div>
+        </div>
+
+        <form id="admin-custom-tourn-form" class="form-grid-auto" onsubmit="handleCreateCustomTournament(event)">
+          <div class="form-group">
+            <label for="ct-title">Match Title</label>
+            <input type="text" id="ct-title" placeholder="e.g., SSS 1 vs SSS 2 Challenge" required />
+          </div>
+          <div class="form-group">
+            <label for="ct-mode">Match Mode</label>
+            <select id="ct-mode" onchange="toggleCustomTournamentFields()">
+              <option value="two_class">Two-Class Competition</option>
+              <option value="one_on_one">1-on-1 Head-to-Head</option>
+            </select>
+          </div>
+          <div class="form-group ct-two-class-field">
+            <label for="ct-class-a">Class A</label>
+            <select id="ct-class-a">
+              <option value="JSS 1">JSS 1</option>
+              <option value="JSS 2">JSS 2</option>
+              <option value="JSS 3">JSS 3</option>
+              <option value="SSS 1" selected>SSS 1</option>
+              <option value="SSS 2">SSS 2</option>
+              <option value="SSS 3">SSS 3</option>
+            </select>
+          </div>
+          <div class="form-group ct-two-class-field">
+            <label for="ct-class-b">Class B</label>
+            <select id="ct-class-b">
+              <option value="JSS 1">JSS 1</option>
+              <option value="JSS 2">JSS 2</option>
+              <option value="JSS 3">JSS 3</option>
+              <option value="SSS 1">SSS 1</option>
+              <option value="SSS 2" selected>SSS 2</option>
+              <option value="SSS 3">SSS 3</option>
+            </select>
+          </div>
+          <div class="form-group ct-one-on-one-field hidden">
+            <label for="ct-player-a">Candidate 1 Full Name</label>
+            <input type="text" id="ct-player-a" placeholder="Registered student name" />
+          </div>
+          <div class="form-group ct-one-on-one-field hidden">
+            <label for="ct-player-b">Candidate 2 Full Name</label>
+            <input type="text" id="ct-player-b" placeholder="Registered student name" />
+          </div>
+          <div class="form-group" style="display:flex; align-items:flex-end;">
+            <button type="submit" class="btn-primary btn-block">Create Custom Match</button>
+          </div>
+        </form>
+
+        <div id="admin-custom-tournaments-list" class="script-review-stack" style="margin-top: 16px;"></div>
+      </div>
+
+      <!-- Study Notes & Bundled Topic + Question Uploader -->
+      <div class="card">
+        <div class="section-split-header">
+          <div>
+            <span class="pill-tag">Dedicated Study Notes Storage • Bundled Upload</span>
+            <h3 style="color: var(--navy-primary); margin-top: 6px;">Study Note &amp; Topic Question Bundle Uploader</h3>
+            <p class="muted-small">Upload a topic's study note (with optional YouTube tutorial link) and optionally attach 20–50 topic questions via CSV in one step.</p>
+          </div>
+        </div>
+
+        <form id="admin-study-bundle-form" class="form-grid" onsubmit="handleAdminStudyBundleSave(event)">
+          <div class="form-group">
+            <label for="note-class-select">1. Target Class Level</label>
+            <select id="note-class-select" onchange="syncAdminNoteSubjects()" required>
+              <option value="JSS 1">JSS 1</option>
+              <option value="JSS 2">JSS 2</option>
+              <option value="JSS 3" selected>JSS 3</option>
+              <option value="SSS 1">SSS 1</option>
+              <option value="SSS 2">SSS 2</option>
+              <option value="SSS 3">SSS 3</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="note-subject-select">2. Subject</label>
+            <select id="note-subject-select" onchange="syncAdminNoteTopics()" required></select>
+          </div>
+
+          <div class="form-group">
+            <label for="note-topic-select">3. Syllabus Topic</label>
+            <select id="note-topic-select"></select>
+          </div>
+
+          <div class="form-group">
+            <label for="note-custom-topic">Or Custom Topic Name (Optional)</label>
+            <input type="text" id="note-custom-topic" placeholder="Leave blank to use selected topic" />
+          </div>
+
+          <div class="form-group full-width">
+            <label for="note-video-url">4. Optional YouTube Tutorial Link (Leave blank if none)</label>
+            <input type="text" id="note-video-url" placeholder="e.g., https://www.youtube.com/watch?v=..." />
+          </div>
+
+          <div class="form-group full-width">
+            <label for="note-content-input">5. Study Note Content (Supports Clean Text, Headings, Bullet Points, HTML Tables &amp; SVG)</label>
+            <textarea id="note-content-input" rows="6" placeholder="Write clear definitions, key formulas/rules, and a worked example for students..." required></textarea>
+          </div>
+
+          <div class="form-group full-width">
+            <label for="note-bundle-csv">6. Optional Bundled Topic Questions CSV (20–50 Questions — Auto-Linked to This Topic)</label>
+            <textarea id="note-bundle-csv" rows="4" placeholder="prompt,option_a,option_b,option_c,option_d,correct_option,explanation (class_level, subject &amp; topic auto-filled if omitted)"></textarea>
+          </div>
+
+          <div class="form-actions full-width">
+            <button type="submit" class="btn-primary">Save Study Note &amp; Bundled Questions</button>
+          </div>
+        </form>
+
+        <div style="margin-top: 20px;">
+          <h4 style="color: var(--navy-primary); margin-bottom: 10px;">Saved Study Notes (<span id="admin-notes-count">0</span>)</h4>
+          <div id="admin-notes-list" class="script-review-stack"></div>
+        </div>
+      </div>
+
+      <!-- Student Error / Typo Flags Queue -->
+      <div class="card">
+        <div class="section-split-header">
+          <div>
+            <span class="pill-tag">Quality Control</span>
+            <h3 style="color: var(--navy-primary); margin-top: 6px;">Reported Typos &amp; Error Flags (<span id="admin-flags-count">0</span>)</h3>
+            <p class="muted-small">Student-reported typos or answer-key issues appear here so you can fix them quickly.</p>
+          </div>
+        </div>
+        <div id="admin-flags-list" class="script-review-stack"></div>
+      </div>
+
       <!-- Platform Usage & Score Overview -->
       <div class="card">
         <div class="section-split-header admin-header-border">
           <div>
-            <span class="pill-tag">Examiner Monitor • 250-Question Bank Target</span>
+            <span class="pill-tag">Examiner Monitor • 1,000-Question Bank Target</span>
             <h2>Examiner Admin Board — WAEC/JAMB/NECO Pool &amp; Analytics</h2>
-            <p class="muted-small">Upload up to 250 past questions per subject/class (with diagrams, tables &amp; charts), monitor scores, and export broadsheets.</p>
+            <p class="muted-small">Upload up to 1,000 past questions per subject/class (with diagrams, tables &amp; charts), monitor scores, and export broadsheets.</p>
           </div>
           <div class="admin-utility-btns">
             <button type="button" class="btn-outline" onclick="exportBroadsheetCSV()">Export Broadsheet (.csv)</button>
@@ -677,7 +911,7 @@
       <div class="card">
         <div class="section-split-header">
           <div>
-            <span class="pill-tag">Fast Batch Upload (250+ Rows Ready • Supports Tables &amp; SVG)</span>
+            <span class="pill-tag">Fast Batch Upload (1,000+ Rows Ready • Duplicate Guard Active)</span>
             <h3 style="color: var(--navy-primary); margin-top: 6px;">Bulk CSV Question Importer</h3>
             <p class="muted-small">Columns: <code>class_level,subject,topic,exam_source,prompt,diagram_svg,option_a,option_b,option_c,option_d,correct_option,explanation</code> (<code>exam_source</code> &amp; <code>diagram_svg</code> are optional).</p>
           </div>
@@ -704,7 +938,7 @@
           <div class="topic-banner-top">
             <div>
               <strong>Selected Subject Pool:</strong>
-              <span id="admin-subject-progress-text">0 / 250 Questions Uploaded</span>
+              <span id="admin-subject-progress-text">0 / 1,000 Questions Uploaded</span>
             </div>
             <span class="muted-small">Click any topic pill to select it:</span>
           </div>
@@ -857,11 +1091,11 @@
             <span class="footer-logo-badge">CBT</span>
             <div>
               <h2>Scholars Standard</h2>
-              <span>Examination Portal</span>
+              <span>Examination &amp; Study Portal</span>
             </div>
           </div>
           <p class="footer-description">
-            A modern computer-based examination platform designed
+            A modern computer-based examination and study platform designed
             to support academic excellence, effective assessment,
             student development and performance tracking.
           </p>
@@ -875,6 +1109,7 @@
           <h3>Quick Navigation</h3>
           <ul>
             <li><a href="#" onclick="switchPortalView('student'); return false;">Examination Lobby</a></li>
+            <li><a href="#" onclick="switchPortalView('study'); return false;">Study Notes Hub</a></li>
             <li><a href="#" onclick="switchPortalView('leaderboard'); return false;">Class Leaderboard</a></li>
             <li><a href="#" onclick="switchPortalView('tournaments'); return false;">School Tournaments</a></li>
             <li><a href="#" onclick="switchPortalView('dashboard'); return false;">My Dashboard</a></li>
@@ -932,6 +1167,10 @@
     <button type="button" id="btn-student-view" class="bottom-tab-btn active" onclick="switchPortalView('student')">
       <span class="bottom-tab-icon">📝</span>
       <span>Exam</span>
+    </button>
+    <button type="button" id="btn-study-view" class="bottom-tab-btn" onclick="switchPortalView('study')">
+      <span class="bottom-tab-icon">📖</span>
+      <span>Study</span>
     </button>
     <button type="button" id="btn-leaderboard-view" class="bottom-tab-btn" onclick="switchPortalView('leaderboard')">
       <span class="bottom-tab-icon">🏆</span>
@@ -1038,7 +1277,7 @@
       }
     })();
   </script>
-  <script src="{{ url_for('static', filename='script.js') }}?v=2030"></script>
+  <script src="{{ url_for('static', filename='script.js') }}?v=2031"></script>
 
 </body>
 </html>
